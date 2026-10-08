@@ -1,6 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { recoverInterruptedCaepiSyncs } from "@preventbase/caepi";
 import { createPrismaClient } from "@preventbase/database";
 import { type Job, Queue, Worker } from "bullmq";
 import { Redis } from "ioredis";
@@ -43,6 +44,8 @@ async function handle(job: Job): Promise<unknown> {
 }
 
 async function main(): Promise<void> {
+  const interrupted = await recoverInterruptedCaepiSyncs(prisma);
+  if (interrupted > 0) log("warn", "sincronizações CAEPI interrompidas marcadas como FAILED", { count: interrupted });
   for (const s of SCHEDULES) {
     await queue.upsertJobScheduler(s.id, { pattern: s.pattern, tz: TZ }, { name: s.name, data: {}, opts: { removeOnComplete: 50, removeOnFail: 100 } });
   }

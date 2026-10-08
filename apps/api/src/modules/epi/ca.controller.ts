@@ -1,6 +1,8 @@
+import { rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { Controller, Get, HttpCode, Param, Post, UploadedFile, UseInterceptors } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
-import { syncCaepi } from "@preventbase/caepi";
+import { CaepiBusyError, CaepiFileError, syncCaepiFile } from "@preventbase/caepi";
 import { normalizeCaNumber, startOfUtcDay } from "@preventbase/contracts";
 import { config } from "../../config.js";
 import { AuditService } from "../../core/audit.service.js";
@@ -63,12 +65,20 @@ export class CaController {
   /** Importação manual do tgg_export_caepi (.zip ou .txt) baixado do MTE. */
   @Post("import")
   @RequirePermissions("ca.sync")
-  @UseInterceptors(FileInterceptor("file", { limits: { fileSize: 200 * 1024 * 1024 } }))
+  @UseInterceptors(FileInterceptor("file", { dest: tmpdir(), limits: { fileSize: 200 * 1024 * 1024 } }))
   async import(@UploadedFile() file?: Express.Multer.File) {
     if (!file) throw new DomainError(400, "FILE_REQUIRED", "Envie o arquivo da base CAEPI (.zip ou .txt)");
     const { userId } = authed();
-    const result = await syncCaepi(this.prisma, file.buffer, { source: `upload:${file.originalname}`, triggeredBy: userId });
-    await this.audit.log({ action: "ca.imported", entityType: "CaSync", entityId: result.syncId, after: result });
-    return result;
+    try {
+      const result = await syncCaepiFile(this.prisma, file.path, { source: `upload:${file.originalname}`, triggeredBy: userId });
+      await this.audit.log({ action: "ca.imported", entityType: "CaSync", entityId: result.syncId, after: result });
+      return result;
+    } catch (err) {
+      if (err instanceof CaepiBusyError) throw new DomainError(409, "CAEPI_BUSY", err.message);
+      if (err instanceof CaepiFileError) throw new DomainError(422, "CAEPI_FILE_INVALID", err.message);
+      throw err;
+    } finally {
+      await rm(file.path, { force: true });
+    }
   }
 }

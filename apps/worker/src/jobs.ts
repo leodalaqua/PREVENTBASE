@@ -1,4 +1,4 @@
-import { downloadCaepi, syncCaepi } from "@preventbase/caepi";
+import { syncCaepiFromUrl } from "@preventbase/caepi";
 import { expiringLots, lowStock, type PrismaClient, requirementStatus, stockDrift, verifyAuditChain } from "@preventbase/database";
 
 export interface Alert {
@@ -166,6 +166,5 @@ export async function runStockReconcile(prisma: PrismaClient): Promise<Record<st
 
 /** §8 — base CAEPI (somente leitura do governo; nunca escrita externa). */
 export async function runCaepiSync(prisma: PrismaClient, url: string, triggeredBy?: string): Promise<unknown> {
-  const buffer = await downloadCaepi(url);
-  return syncCaepi(prisma, buffer, { source: url, triggeredBy: triggeredBy ?? "worker" });
+  return syncCaepiFromUrl(prisma, url, { triggeredBy: triggeredBy ?? "worker" });
 }
