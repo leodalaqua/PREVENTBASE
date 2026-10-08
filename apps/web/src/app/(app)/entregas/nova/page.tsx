@@ -1,0 +1,360 @@
+"use client";
+
+import { useMutation, useQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { BiometricCapture, type VerifyResult } from "@/components/biometric-capture";
+import { type EmployeeLite, EmployeePicker, EpiPicker, type PickedVariant, WarehouseSelect } from "@/components/pickers";
+import { Badge, Button, Card, cx, ErrorBox, Field, Input, LinkButton, Loading, Modal, PageHeader, Select, StatusBadge, Textarea } from "@/components/ui";
+import { api, newIdempotencyKey, openFile } from "@/lib/api";
+import { useAuth } from "@/lib/auth";
+import { fmtDate, fmtDateTime } from "@/lib/format";
+import { companyName, useReasons, variantLabel } from "@/lib/hooks";
+
+interface Line {
+  key: string;
+  product: PickedVariant["product"];
+  variant: PickedVariant["variant"];
+  lotId?: string;
+  quantity: number;
+  reasonCode: string;
+  justification: string;
+}
+
+interface PreparedItem {
+  index: number;
+  productDescription: string | null;
+  sku: string | null;
+  quantity: number;
+  reasonName: string | null;
+  lot: { id: string; lotNumber: string; caNumber: string; expiryDate: string | null; caValidAtPurchase: boolean | null } | null;
+  available: number;
+  manufacturer: string | null;
+  caToday: { validUntil: string | null; situation: string | null; validToday: boolean | null } | null;
+  isEarlyReplacement: boolean;
+  nextReplacementDue: string | null;
+  requiredByJob: boolean;
+  warnings: string[];
+  errors: string[];
+}
+
+interface Prepared {
+  ok: boolean;
+  errors: string[];
+  employee: { id: string; name: string; registration: string | null; job: { name: string } | null; company: { legalName: string; tradeName: string | null } };
+  warehouse: { id: string; name: string };
+  items: PreparedItem[];
+  terms: { version: number; text: string; textHash: string } | null;
+  biometric: { id: string; enrolledAt: string } | null;
+}
+
+interface Sst {
+  requirements: Array<{ productId: string; productDescription: string; requiredQty: number; status: string; nextReplacementDue: string | null }>;
+  biometric: { id: string } | null;
+}
+
+interface Created {
+  id: string;
+  publicId: string;
+  hash: string | null;
+  deliveredAt: string;
+  replayed: boolean;
+  warnings?: string[];
+}
+
+const STEPS = ["Colaborador", "Itens", "Conferência", "Termo e biometria", "Concluído"];
+
+function Wizard() {
+  const params = useSearchParams();
+  const { me } = useAuth();
+  const { data: reasons } = useReasons();
+  const [step, setStep] = useState(0);
+  const [employee, setEmployee] = useState<EmployeeLite | null>(null);
+  const [warehouseId, setWarehouseId] = useState("");
+  const [lines, setLines] = useState<Line[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [prepared, setPrepared] = useState<Prepared | null>(null);
+  const [confirmed, setConfirmed] = useState(false);
+  const [verification, setVerification] = useState<VerifyResult | null>(null);
+  const [idemKey, setIdemKey] = useState(() => newIdempotencyKey());
+  const [created, setCreated] = useState<Created | null>(null);
+
+  const presetId = params.get("employeeId");
+  useEffect(() => {
+    if (presetId && !employee) {
+      api.get<EmployeeLite>(`/employees/${presetId}`).then((e) => {
+        setEmployee(e);
+        setStep(1);
+      }).catch(() => undefined);
+    }
+  }, [presetId, employee]);
+
+  const { data: sst } = useQuery({ queryKey: ["employee", employee?.id], queryFn: () => api.get<Sst>(`/employees/${employee!.id}/sst`), enabled: !!employee });
+  const pending = sst?.requirements.filter((r) => r.status !== "OK") ?? [];
+
+  const activeReasons = useMemo(() => reasons?.filter((r) => r.active) ?? [], [reasons]);
+
+  const prepare = useMutation({
+    mutationFn: () =>
+      api.post<Prepared>("/deliveries/prepare", {
+        employeeId: employee!.id,
+        warehouseId,
+        items: lines.map((l) => ({ variantId: l.variant.id, lotId: l.lotId, quantity: l.quantity, reasonCode: l.reasonCode, justification: l.justification || null })),
+      }),
+    onSuccess: (p) => {
+      setPrepared(p);
+      setStep(2);
+    },
+  });
+
+  const submit = useMutation({
+    mutationFn: () =>
+      api.post<Created>(
+        "/deliveries",
+        {
+          employeeId: employee!.id,
+          warehouseId,
+          items: lines.map((l) => ({ variantId: l.variant.id, lotId: prepared?.items[lines.indexOf(l)]?.lot?.id ?? l.lotId, quantity: l.quantity, reasonCode: l.reasonCode, justification: l.justification || null })),
+          termsVersion: prepared!.terms!.version,
+          confirmed: true,
+          biometricVerificationId: verification!.verificationId,
+        },
+        { "idempotency-key": idemKey },
+      ),
+    onSuccess: (c) => {
+      setCreated(c);
+      setStep(4);
+    },
+  });
+
+  function addLine(p: PickedVariant) {
+    const pendingReq = pending.find((r) => r.productId === p.product.id);
+    const defaultReason = pendingReq?.status === "MISSING" ? "INITIAL" : pendingReq?.status === "OVERDUE" ? "WEAR" : "";
+    setLines((ls) => [...ls, { key: crypto.randomUUID(), product: p.product, variant: p.variant, lotId: p.lotId, quantity: pendingReq?.requiredQty ?? 1, reasonCode: defaultReason, justification: "" }]);
+    setAdding(false);
+  }
+
+  async function addPending() {
+    for (const r of pending) {
+      if (lines.some((l) => l.product.id === r.productId)) continue;
+      const product = await api.get<PickedVariant["product"]>(`/epis/${r.productId}`);
+      const active = product.variants.filter((v) => v.active);
+      if (active.length === 1) addLine({ product, variant: active[0]! });
+    }
+  }
+
+  function reset() {
+    setStep(0);
+    setEmployee(null);
+    setLines([]);
+    setPrepared(null);
+    setConfirmed(false);
+    setVerification(null);
+    setCreated(null);
+    setIdemKey(newIdempotencyKey());
+  }
+
+  const deviceOk = me?.device?.status === "TRUSTED";
+  const linesValid = lines.length > 0 && lines.every((l) => l.quantity > 0 && l.reasonCode && (!activeReasons.find((r) => r.code === l.reasonCode)?.requiresJustification || l.justification.trim()));
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      <PageHeader title="Entrega de EPI" subtitle="Validação legal no servidor · biometria facial 1:1 com prova de vida" />
+      <ol className="mb-4 flex gap-1 overflow-x-auto text-xs">
+        {STEPS.map((s, i) => (
+          <li key={s} className={cx("flex-1 whitespace-nowrap rounded-full px-3 py-1 text-center", i === step ? "bg-teal-700 text-white" : i < step ? "bg-teal-100 text-teal-800" : "bg-slate-200 text-slate-500")}>
+            {i + 1}. {s}
+          </li>
+        ))}
+      </ol>
+      {!deviceOk && step < 4 && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          Entregas só podem ser registradas em dispositivo autorizado. <Link href="/dispositivo" className="font-medium underline">Ver dispositivo</Link>
+        </div>
+      )}
+
+      {step === 0 && (
+        <Card title="Quem vai receber?">
+          <EmployeePicker
+            onPick={(e) => {
+              setEmployee(e);
+              setStep(1);
+            }}
+          />
+        </Card>
+      )}
+
+      {step === 1 && employee && (
+        <div className="space-y-4">
+          <Card
+            title={employee.name}
+            actions={<Button variant="ghost" onClick={() => { setEmployee(null); setLines([]); setStep(0); }}>Trocar</Button>}
+          >
+            <p className="text-sm text-slate-600">
+              {employee.registration ?? "s/ matrícula"} · {employee.job?.name ?? "sem função"} · {employee.department?.name ?? "sem setor"} · {companyName(employee.company)}
+            </p>
+            {sst && !sst.biometric && <p className="mt-2 text-sm text-red-700">Colaborador sem biometria cadastrada — <Link className="underline" href={`/colaboradores/${employee.id}`}>cadastre antes da entrega</Link>.</p>}
+            {pending.length > 0 && (
+              <div className="mt-3 rounded-lg bg-amber-50 p-3 text-sm">
+                <p className="font-medium text-amber-900">Pendências pela função:</p>
+                <ul className="mt-1 list-inside list-disc text-amber-900">
+                  {pending.map((r) => (
+                    <li key={r.productId}>
+                      {r.productDescription} — <StatusBadge status={r.status} /> {r.nextReplacementDue && `(troca prevista ${fmtDate(r.nextReplacementDue)})`}
+                    </li>
+                  ))}
+                </ul>
+                <Button variant="secondary" className="mt-2" onClick={() => void addPending()}>Adicionar pendentes</Button>
+              </div>
+            )}
+          </Card>
+          <Card title="Itens da entrega">
+            <Field label="Almoxarifado de saída" className="mb-3">
+              <WarehouseSelect value={warehouseId} onChange={setWarehouseId} companyId={employee.companyId} />
+            </Field>
+            <div className="space-y-3">
+              {lines.map((l, i) => {
+                const reason = activeReasons.find((r) => r.code === l.reasonCode);
+                return (
+                  <div key={l.key} className="rounded-lg border border-slate-200 p-3">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="font-medium">{l.product.description}</p>
+                        <p className="text-xs text-slate-500">{variantLabel(l.variant)} · SKU {l.variant.sku} · CA {l.product.cas[0]?.caNumber ?? "—"}{l.lotId ? " · lote escaneado" : ""}</p>
+                      </div>
+                      <button className="text-sm text-red-600" onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))}>remover</button>
+                    </div>
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      <Field label="Qtd">
+                        <Input type="number" min={1} value={l.quantity} onChange={(e) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, quantity: Number(e.target.value) } : x)))} />
+                      </Field>
+                      <Field label="Motivo" className="col-span-2">
+                        <Select value={l.reasonCode} onChange={(e) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, reasonCode: e.target.value } : x)))}>
+                          <option value="">Selecione…</option>
+                          {activeReasons.map((r) => (
+                            <option key={r.code} value={r.code}>{r.name}</option>
+                          ))}
+                        </Select>
+                      </Field>
+                    </div>
+                    {(reason?.requiresJustification || l.justification) && (
+                      <Field label={`Justificativa${reason?.requiresJustification ? " (obrigatória)" : ""}`} className="mt-2">
+                        <Textarea rows={2} value={l.justification} onChange={(e) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, justification: e.target.value } : x)))} />
+                      </Field>
+                    )}
+                    {!reason?.requiresJustification && !l.justification && (
+                      <button className="mt-1 text-xs text-slate-500 underline" onClick={() => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, justification: " " } : x)))}>adicionar justificativa</button>
+                    )}
+                  </div>
+                );
+              })}
+              <Button variant="secondary" className="w-full" onClick={() => setAdding(true)}>＋ Adicionar EPI</Button>
+            </div>
+          </Card>
+          <ErrorBox error={prepare.error} />
+          <Button className="w-full" disabled={!warehouseId || !linesValid} loading={prepare.isPending} onClick={() => prepare.mutate()}>
+            Conferir entrega
+          </Button>
+        </div>
+      )}
+
+      {step === 2 && prepared && (
+        <div className="space-y-4">
+          {prepared.errors.length > 0 && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+              {prepared.errors.map((e) => <p key={e}>✖ {e}</p>)}
+            </div>
+          )}
+          {prepared.items.map((it) => (
+            <Card key={it.index} title={`${it.quantity}× ${it.productDescription ?? "?"}`}>
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-3">
+                <div><dt className="text-xs text-slate-500">Lote (FEFO)</dt><dd>{it.lot?.lotNumber ?? "—"}</dd></div>
+                <div><dt className="text-xs text-slate-500">Validade do lote</dt><dd>{fmtDate(it.lot?.expiryDate)}</dd></div>
+                <div><dt className="text-xs text-slate-500">CA</dt><dd>{it.lot?.caNumber ?? "—"}</dd></div>
+                <div>
+                  <dt className="text-xs text-slate-500">CA na compra</dt>
+                  <dd>{it.lot?.caValidAtPurchase === true ? <Badge color="green">válido</Badge> : it.lot?.caValidAtPurchase === false ? <Badge color="red">vencido</Badge> : <Badge color="amber">não verificado</Badge>}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-slate-500">CA hoje</dt>
+                  <dd>{it.caToday ? <>{it.caToday.validToday ? <Badge color="green">válido</Badge> : <Badge color="amber">vencido</Badge>} {fmtDate(it.caToday.validUntil)}</> : "sem base CAEPI"}</dd>
+                </div>
+                <div><dt className="text-xs text-slate-500">Próxima troca</dt><dd>{fmtDate(it.nextReplacementDue)}</dd></div>
+                <div><dt className="text-xs text-slate-500">Motivo</dt><dd>{it.reasonName}{it.isEarlyReplacement && " (troca antecipada)"}</dd></div>
+                <div><dt className="text-xs text-slate-500">Saldo no lote</dt><dd>{it.available}</dd></div>
+                <div><dt className="text-xs text-slate-500">Fabricante</dt><dd>{it.manufacturer ?? "—"}</dd></div>
+              </dl>
+              {it.errors.map((e) => <p key={e} className="mt-2 text-sm text-red-700">✖ {e}</p>)}
+              {it.warnings.map((w) => <p key={w} className="mt-2 text-sm text-amber-700">⚠ {w}</p>)}
+            </Card>
+          ))}
+          <div className="flex gap-2">
+            <Button variant="secondary" className="flex-1" onClick={() => setStep(1)}>Voltar</Button>
+            <Button className="flex-1" disabled={!prepared.ok || !deviceOk} onClick={() => setStep(3)}>Prosseguir</Button>
+          </div>
+        </div>
+      )}
+
+      {step === 3 && prepared?.terms && employee && (
+        <div className="space-y-4">
+          <Card title={`Termo de recebimento — versão ${prepared.terms.version}`}>
+            <p className="whitespace-pre-line text-sm text-slate-700">{prepared.terms.text}</p>
+            <ul className="mt-3 list-inside list-disc text-sm text-slate-600">
+              {prepared.items.map((it) => <li key={it.index}>{it.quantity}× {it.productDescription} — CA {it.lot?.caNumber} — lote {it.lot?.lotNumber}</li>)}
+            </ul>
+            <label className="mt-4 flex items-start gap-3 rounded-lg border-2 border-teal-600 bg-teal-50 p-3 text-sm">
+              <input type="checkbox" className="mt-1 h-5 w-5" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
+              <span><strong>{employee.name}</strong> confirma que recebeu os EPIs acima, foi orientado(a) sobre uso, guarda e conservação e está ciente das obrigações da NR-6.</span>
+            </label>
+          </Card>
+          {confirmed && (
+            <Card title="Biometria facial do colaborador">
+              {verification ? (
+                <p className="text-sm text-emerald-700">✔ Identidade confirmada (similaridade {verification.score.toFixed(2)}, prova de vida aprovada).</p>
+              ) : (
+                <BiometricCapture employeeId={employee.id} purpose="DELIVERY" onVerified={setVerification} />
+              )}
+            </Card>
+          )}
+          <ErrorBox error={submit.error} />
+          <div className="flex gap-2">
+            <Button variant="secondary" className="flex-1" onClick={() => setStep(2)}>Voltar</Button>
+            <Button className="flex-1" disabled={!confirmed || !verification} loading={submit.isPending} onClick={() => submit.mutate()}>
+              Registrar entrega
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {step === 4 && created && (
+        <Card>
+          <div className="space-y-3 text-center">
+            <p className="text-4xl">✔</p>
+            <p className="text-lg font-semibold">Entrega registrada{created.replayed ? " (já registrada anteriormente)" : ""}</p>
+            <p className="text-sm text-slate-500">{fmtDateTime(created.deliveredAt)} · código {created.publicId}</p>
+            <p className="break-all font-mono text-xs text-slate-400">SHA-256 {created.hash}</p>
+            {created.warnings?.map((w) => <p key={w} className="text-sm text-amber-700">⚠ {w}</p>)}
+            <div className="flex flex-wrap justify-center gap-2 pt-2">
+              <Button onClick={() => void openFile(`/deliveries/${created.id}/pdf`)}>Comprovante PDF</Button>
+              <LinkButton variant="secondary" href={`/entregas/${created.id}`}>Detalhes</LinkButton>
+              <Button variant="secondary" onClick={reset}>Nova entrega</Button>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      <Modal open={adding} title="Adicionar EPI" onClose={() => setAdding(false)}>
+        <EpiPicker onPick={addLine} />
+      </Modal>
+    </div>
+  );
+}
+
+export default function NewDeliveryPage() {
+  return (
+    <Suspense fallback={<Loading />}>
+      <Wizard />
+    </Suspense>
+  );
+}

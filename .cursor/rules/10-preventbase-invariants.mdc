@@ -1,0 +1,22 @@
+---
+description: Invariantes do PreventBase (MASTER-PLAN §0 e §79) - violar exige alterar o plano mestre antes
+alwaysApply: true
+---
+
+# Invariantes PreventBase
+
+Fonte: `docs/MASTER-PLAN.md`. Conflito entre pedido e invariante → **parar e perguntar**.
+
+1. **eSocial somente leitura.** Proibido qualquer método, endpoint, botão, job ou dependência de transmissão (`sendEvent`, envio de lote, "Enviar S-xxxx"). Só `esocial-readonly`: consultar identificadores, download, importar/validar/parsear XML. Allowlist de endpoints (§38-§41).
+2. **Entrega de EPI** = ato explícito de confirmação + biometria 1:1 + liveness; colaborador usa o aparelho do responsável. Registro imutável com `delivery_evidence` + SHA-256 canônico + `idempotency_key` (§9-§11, §81).
+3. **CA:** guardar `purchase_date` e "CA válido na compra"; não bloquear entrega por CA vencido após a compra; validar validade do lote/produto (§19).
+4. **Estoque** só por `stock_movement`; saldo derivado; FEFO; sem estoque negativo (§14-§15).
+5. **Biometria isolada** no `biometric-service`; API principal nunca lê template; foto cadastral ≠ template (§8).
+6. **Saúde segregada** no modelo (`health.view_summary` × `health.view_medical`) (§34).
+7. **Sem delete físico** de registros críticos: `cancelled_at/by/reason` (§52). Documentos de evidência versionados com hash (§46).
+8. **Auditoria** obrigatória em operações relevantes; hash chain (§51, §82).
+9. Multiempresa: `tenant_id`, `company_id`, `establishment_id` nas tabelas transacionais (§6).
+10. Regras de negócio/legais só no backend; frontend nunca decide sozinho. APIs `/api/v1`. Migrations versionadas. Datas `timestamptz` UTC.
+11. Secrets só via env/secrets manager; nenhuma credencial em código.
+12. Modelo de dados único compartilhado entre módulos - não criar CRUD isolado por módulo (§0).
+13. Fluxos críticos (§80) exigem testes automatizados.

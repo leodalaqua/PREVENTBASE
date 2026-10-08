@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/.next
+**/*.tsbuildinfo
+**/__pycache__
+.git
+.env
+.env.*
+!.env.example
+backups
+apps/biometric-service
+docs
+*.log

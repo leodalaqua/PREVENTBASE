@@ -1,0 +1,32 @@
+---
+description: Cadência de commit/push no GitHub — 2x por semana ou a cada volume significativo
+alwaysApply: true
+---
+
+# Commits e push no GitHub
+
+Vale para todo repo do ecossistema (mapa em `C:\ROBBY\docs\SUMMARY.md`).
+
+## Quando commitar + push (o que vier primeiro)
+
+1. **Cadência mínima: 2x por semana** — referência segunda e quinta. Se o último commit no remoto tiver **mais de 3 dias** e houver alterações locais, commitar.
+2. **Volume significativo**, mesmo fora da cadência:
+   - ~**15+ arquivos** alterados ou ~**300+ linhas** (`git diff --shortstat`);
+   - funcionalidade/módulo concluído e validado;
+   - migration, schema de banco, config de portas/stack/auth;
+   - antes de refactor grande ou mudança arriscada (ponto de retorno).
+
+## Verificação ao fim de cada tarefa
+
+- `git status` + `git log -1 --format=%cr origin/HEAD` (ou branch atual).
+- Critério atingido → avisar o usuário e fazer commit + `git push`.
+- Repo sem `.git` ou sem `origin` → só avisar em PENDENTE (não criar remoto sem pedido).
+
+## Como commitar
+
+- Staging **seletivo** por caminho; nunca `git add -A`/`git add .` às cegas.
+- **Nunca** commitar: `.env*` (exceto `.env.example`), secrets, certificados/chaves, perfis de navegador, `data/` de runtime, logs, `*.pid`, `tmp/`, dumps de banco. Achou algo assim não ignorado → propor entrada no `.gitignore`.
+- Revisar `git diff --cached` antes do commit (secrets, arquivos binários grandes).
+- Commits coesos: agrupar por assunto; volume grande → vários commits.
+- Mensagem: `tipo(escopo): resumo` em português (`feat`, `fix`, `refactor`, `docs`, `chore`, `config`).
+- Sem `--force`, sem `--no-verify`, sem alterar config git. Push rejeitado → `git pull --rebase` e, se houver conflito, parar e perguntar.

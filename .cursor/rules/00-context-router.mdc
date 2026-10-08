@@ -1,0 +1,46 @@
+﻿---
+description: Roteamento mínimo de contexto — só via SUMMARY; sem Search
+alwaysApply: true
+---
+
+# Context router
+
+Quando o agente for solicitado **diretamente neste repositório** (workspace = este app), para **qualquer** validação de contexto:
+
+1. Abra `docs/SUMMARY.md` **deste** repositório (não use Search/Grep para achar o que ler).
+2. Abra só o MD do **módulo** apontado por esse SUMMARY.
+3. Ligação transversal / cruzada com módulo de **outro** repositório:
+   - Abra o SUMMARY global: `C:\ROBBY\docs\SUMMARY.md`
+   - Depois só o `docs/SUMMARY.md` do outro repo e o MD do módulo citado.
+4. Integração externa → link do SUMMARY local, ou arquivo em `C:\ROBBY\docs\integrations/` se o SUMMARY apontar.
+5. Código: **apenas** paths apontados. Expanda só se a validação falhar.
+
+## Teto de contexto documental
+
+Máximo para orientar-se: SUMMARY deste repo + MD do módulo + (se cruzado) SUMMARY global ROBBY + SUMMARY do outro repo + MD desse módulo. Nada além disso “por precaução”.
+
+## Proibido — descoberta de contexto
+
+- **Search / Grep / busca semântica / Glob exploratório** para descobrir docs, módulos ou estrutura do projeto — o SUMMARY é a única porta de entrada.
+- Ler outros repos ou docs preventivamente além do teto acima.
+- Abrir `docs/archive/` sem necessidade histórica explícita.
+- Reler arquivos já compreendidos e não alterados.
+- Duplicar a mesma explicação em vários MDs (uma fonte; demais só linkam).
+
+Grep/Search no código só é aceitável **depois** do roteamento, e **apenas** dentro dos paths já apontados pelo SUMMARY/módulo.
+
+## Após a tarefa
+
+- Atualizar **somente** documentação impactada neste repo (módulo / SUMMARY se novo módulo).
+- Cruzamentos → preferir atualizar a fonte em `C:\ROBBY\docs\` (integração / dependency-map) em vez de duplicar.
+- Se a mudança não altera conhecimento futuro: não documentar.
+
+## Antes de alterar (validação)
+
+Confirme módulo e impacto via SUMMARY (local e, se cruzado, global) — **não** via busca.
+Ambiguidade material ou alto impacto → **pergunte** (curto, opções A/B/C).
+Baixo risco → investigue nos paths apontados e prossiga.
+
+## Output
+
+Respostas compactas. Formato final preferido: ALTERADO / VALIDADO / PENDENTE.

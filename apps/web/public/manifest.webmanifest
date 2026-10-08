@@ -1,0 +1,15 @@
+{
+  "name": "PreventBase — Hub de SST",
+  "short_name": "PreventBase",
+  "description": "Gestão de EPI, estoque e SST com entrega por biometria facial.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f172a",
+  "theme_color": "#0f766e",
+  "lang": "pt-BR",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

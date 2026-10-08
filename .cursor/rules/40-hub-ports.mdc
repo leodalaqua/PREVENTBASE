@@ -1,0 +1,22 @@
+---
+description: Novo frontend ou porta nova → registrar no hub Robby
+alwaysApply: true
+---
+
+# Portas e frontends → hub Robby
+
+Ao **criar um frontend** ou **liberar/alterar uma porta** (frontend, API, extra) em qualquer repo do ecossistema, na mesma tarefa:
+
+1. `C:\ROBBY\config\ports.json` — porta no `target` do projeto (`id*100+role`; novo repo usa `idRange.nextFree`). Uso em `notes`.
+2. `C:\ROBBY\config\magicdns.json` — entrada em `services` (`id`, `name`, `host`, `kind` frontend|api, `port`, `path` de health/login, `repo`). É o que o painel `:2900` mostra em Acessos/APIs.
+3. Serviço novo no Docker ou só no host → `C:\ROBBY\config\stack.json`.
+4. Validar: `npm run check:hub-ports` em `C:\ROBBY` (precisa sair `ok`).
+
+**Postgres de projeto (repo novo ou banco novo)** — padrão usuário de leitura externo:
+
+- `ports.json` → `pgReader` no projeto: `user` = `<projeto>_leitura` (nome sem espaço/acento, minúsculo), `database`, `container`.
+- `magicdns.json` → linha `kind: "database"` com a porta `postgres` (painel: Bancos de dados).
+- Senha só no `C:\ROBBY\.env` (`PG_READER_PASSWORD_<KEY>`; nunca em config, docs ou hub) → `npm run pg:readers` em `C:\ROBBY`.
+- Reiniciar `pg-gateway` e hub. Detalhe: `C:\ROBBY\docs\robby\pg-gateway.md`.
+
+Remoção de porta/frontend: tirar dos mesmos arquivos. Infra interna (redis, minio, worker) só em `ports.json`.
