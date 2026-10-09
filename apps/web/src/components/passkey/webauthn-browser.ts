@@ -73,9 +73,57 @@ export function deviceName(): string {
   return br ? `${os} · ${br}` : os;
 }
 
+/** Dentro do iframe do portal (outra origem). */
+export function inFrame(): boolean {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Options buscadas antes do toque: o Safari (iPhone, sobretudo em iframe) só libera create/get chamados
+ * direto do clique; um fetch no meio consome a ativação e vira NotAllowedError. Challenge é de uso único.
+ */
+export function optionsCache(fetchOptions: () => Promise<unknown>, ttlMs = 4 * 60_000) {
+  let value: unknown = null;
+  let at = 0;
+  let pending: Promise<unknown> | null = null;
+  const load = () =>
+    (pending ??= fetchOptions()
+      .then((v) => {
+        value = v;
+        at = Date.now();
+        return v;
+      })
+      .finally(() => {
+        pending = null;
+      }));
+  return {
+    warm() {
+      if (!value || Date.now() - at > ttlMs) load().catch(() => undefined);
+    },
+    /** Options prontas (síncrono) ou null; cada options só é usada uma vez. */
+    take(): unknown {
+      const fresh = value && Date.now() - at <= ttlMs ? value : null;
+      value = null;
+      return fresh;
+    },
+    async fetchNow(): Promise<unknown> {
+      const v = await load();
+      value = null;
+      return v;
+    },
+  };
+}
+
 export function passkeyMessage(e: unknown): string {
   const err = e as { name?: string; message?: string; response?: { data?: { message?: unknown; detail?: unknown; error?: unknown } } };
-  if (err?.name === "NotAllowedError") return "Biometria cancelada ou expirada.";
+  if (err?.name === "NotAllowedError")
+    return inFrame()
+      ? "Biometria cancelada ou bloqueada dentro do portal. Abra o sistema fora do portal (botão ⤢ no topo) e tente de novo."
+      : "Biometria cancelada ou expirada.";
   if (err?.name === "InvalidStateError") return "Este aparelho já tem biometria cadastrada.";
   if (err?.name === "SecurityError") return "Biometria indisponível neste endereço (use o HTTPS do servidor).";
   const data = err?.response?.data;

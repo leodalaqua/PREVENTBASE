@@ -2,9 +2,10 @@
 
 // Kit passkey (UI React) — cópia idêntica nos fronts React do ecossistema; sem dependência do UI kit do app.
 // Fonte: C:\ROBBY\kits\passkey\ · Padrão: C:\ROBBY\docs\decisions\2026-10-09-login-passkey.md
-import { useCallback, useEffect, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import {
   deviceName,
+  optionsCache,
   passkeyMessage,
   passkeyOffer,
   passkeySupported,
@@ -85,7 +86,12 @@ export function PasskeyLoginButton({
 }) {
   const [show, setShow] = useState(false);
   const [busy, setBusy] = useState(false);
-  useEffect(() => setShow(passkeySupported()), []);
+  const cache = useMemo(() => optionsCache(() => api.loginOptions()), [api]);
+  useEffect(() => {
+    const ok = passkeySupported();
+    setShow(ok);
+    if (ok) cache.warm();
+  }, [cache]);
   if (!show) return null;
   return (
     <>
@@ -95,13 +101,15 @@ export function PasskeyLoginButton({
         style={className ? style : { ...S.btn, ...style }}
         disabled={busy}
         onClick={async () => {
+          const ready = cache.take();
           onError("");
           setBusy(true);
           try {
-            const result = await api.loginVerify(await webauthnGet(await api.loginOptions()));
-            await onDone(result);
+            const response = await webauthnGet(ready ?? (await cache.fetchNow()));
+            await onDone(await api.loginVerify(response));
           } catch (e) {
             onError(passkeyMessage(e));
+            cache.warm();
           } finally {
             setBusy(false);
           }
@@ -125,6 +133,7 @@ export function PasskeyPanel({ api, invite = false, onDone }: { api: PasskeyApi;
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const offer = passkeyOffer(api.prefix);
+  const cache = useMemo(() => optionsCache(() => api.registerOptions()), [api]);
 
   const load = useCallback(async () => {
     if (invite) return;
@@ -137,19 +146,23 @@ export function PasskeyPanel({ api, invite = false, onDone }: { api: PasskeyApi;
 
   useEffect(() => {
     load();
-  }, [load]);
+    if (passkeySupported()) cache.warm();
+  }, [load, cache]);
 
   const add = async () => {
+    const ready = cache.take();
     setError("");
     setBusy(true);
     try {
-      await api.registerVerify(await webauthnCreate(await api.registerOptions()), deviceName());
+      const response = await webauthnCreate(ready ?? (await cache.fetchNow()));
+      await api.registerVerify(response, deviceName());
       offer.registeredHere();
       if (invite) onDone?.();
       else await load();
     } catch (e) {
       setError(passkeyMessage(e));
     } finally {
+      cache.warm();
       setBusy(false);
     }
   };
