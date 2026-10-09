@@ -2,33 +2,29 @@
 
 ## Responsabilidade
 
-Plataforma central de SST multiempresa com o colaborador como entidade principal. Fase 1: gestão completa de EPI (estoque por lote, CAEPI, entrega com biometria facial, ficha eletrônica, auditoria). eSocial **somente leitura/importação**. Operado por gestor/técnico/RH/líder; colaborador não precisa de celular.
+Plataforma central de SST multiempresa com o colaborador como entidade principal. Fase 1 (no ar): gestão completa de EPI — estoque por lote/FEFO, CAEPI, entrega com biometria facial 1:1 + prova de vida, ficha eletrônica, devolução, inventário, documentos, auditoria. eSocial **somente leitura/importação** (fase futura). Operado por gestor/técnico/RH/líder; colaborador não precisa de celular.
 
-Status: **planejado** - sem código. Fonte do produto: [MASTER-PLAN.md](MASTER-PLAN.md) (referenciar por `§N`).
+Fonte do produto: [MASTER-PLAN.md](MASTER-PLAN.md) (referenciar por `§N`).
 
-## Stack (alvo)
+## Stack
 
-Next.js PWA · NestJS (modular monolith) · PostgreSQL · Redis/BullMQ · MinIO · biometric-service (Python/FastAPI, isolado) · nginx · Docker (`docker-compose.yml`) - [MASTER-PLAN §4-§5](MASTER-PLAN.md#4-arquitetura-geral)
+Next.js 15 PWA (`apps/web`) · NestJS 11 modular monolith (`apps/api`) · worker BullMQ (`apps/worker`) · Prisma 6 + PostgreSQL 16 (`packages/database`) · Redis · MinIO · biometric-service FastAPI + OpenCV (`apps/biometric-service`, isolado) · nginx · Docker (`docker-compose.yml`) · monorepo pnpm 11.
 
 ## Módulos
 
-Docs de módulo são criados junto com o código de cada módulo. Até lá, a seção do plano mestre é a referência.
-
 | Módulo | Doc |
 |--------|-----|
-| Organização / multiempresa / colaboradores | [MASTER-PLAN §6-§7](MASTER-PLAN.md#6-multiempresa) |
-| Identidade, perfis, permissões, dispositivos | §53-§56 |
-| EPI, CA/CAEPI | §17-§19 |
-| Estoque, lotes, almoxarifados, inventário | §14-§16, §27-§28 |
-| Entrega, devolução, ficha, evidência | §9-§13, §29, §65-§66 |
-| Biometria | §8 |
-| Riscos, PGR, matriz Função × EPI, kits | §20-§22, §36 |
-| Treinamentos | §31 |
-| Saúde ocupacional | §33-§35 |
-| Acidentes | §37 |
-| eSocial (somente leitura) | §38-§44 |
-| Documentos | §45-§46 |
-| Auditoria, LGPD | §51-§52, §57, §82 |
+| Organização: empresas, estabelecimentos, setores, funções × EPI, colaboradores | [organizacao.md](organizacao.md) |
+| Identidade: login, refresh, MFA, perfis/permissões, escopo, dispositivos | [identidade.md](identidade.md) |
+| EPI, variações, CA/CAEPI (válido na compra ≠ válido hoje) | [epi-ca.md](epi-ca.md) |
+| Estoque: almoxarifados, lotes, movimentos, FEFO, inventário, alertas | [estoque.md](estoque.md) |
+| Entrega, evidência (hash + PDF + QR), devolução, ficha, verificação pública | [entrega.md](entrega.md) |
+| Biometria facial (serviço isolado, desafio de prova de vida) | [biometria.md](biometria.md) |
+| Documentos (MinIO, versões) | [documentos.md](documentos.md) |
+| Auditoria (cadeia de hash), imutabilidade, LGPD | [auditoria.md](auditoria.md) |
+| Relatórios, dashboard, busca, notificações | [relatorios.md](relatorios.md) |
+| Operação: deploy, worker/jobs, backup, smoke E2E | [operacao.md](operacao.md) |
+| Riscos/PGR, treinamentos, saúde, acidentes, eSocial leitura | MASTER-PLAN §20-§44 (sem código; entidades reservadas no schema) |
 
 ## Invariantes
 
@@ -36,8 +32,26 @@ Docs de módulo são criados junto com o código de cada módulo. Até lá, a se
 
 ## Integrações
 
-Nenhuma ativa. Previstas: base CAEPI/MTE (§18), eSocial download/consulta (§39-§40), `EmployeeProvider` RH (§69).
+Base CAEPI/MTE (download do arquivo oficial, `CAEPI_SOURCE_URL`) → [epi-ca.md](epi-ca.md). Nenhuma integração com outros apps do ecossistema. Previstas: eSocial download/consulta (§39-§40), `EmployeeProvider` RH (§69).
+
+## Dependências
+
+Robby: catálogo de portas/acessos (`C:\ROBBY\config\ports.json`, `magicdns.json`, `stack.json`), portal Veritech (aba tailnet HTTPS `:13100`; `frame-ancestors` no nginx) e leitura externa via pg-gateway (`preventbase_leitura`). `postgres` e `nginx` também em `robby_net`.
+
+## Arquivos principais
+
+| Path | Função |
+|------|--------|
+| `apps/api/src/core/` | Contexto (AsyncLocalStorage), guard JWT/permissões/dispositivo, auditoria, idempotência, storage, fila |
+| `apps/api/src/modules/` | Controllers/serviços por módulo (`/api/v1`, Swagger em `/api/v1/docs`) |
+| `apps/worker/src/` | Jobs agendados (alertas, cadeia, reconciliação, CAEPI) |
+| `apps/biometric-service/app/` | Detecção/embedding/prova de vida, templates cifrados |
+| `apps/web/src/app/` | UI (`(app)/*` autenticado, `login/`, `verificar/[publicId]` público) |
+| `packages/database/prisma/` | Schema, migrations (triggers de imutabilidade em `*_integrity`) |
+| `packages/contracts/` · `packages/permissions/` | Schemas Zod, labels, catálogo de permissões/perfis |
+| `infrastructure/` | Dockerfile (targets api/worker/web), nginx, backup |
+| `scripts/e2e-smoke.ps1` | Smoke E2E isolado |
 
 ## Portas
 
-id 31 em `C:\ROBBY\config\ports.json`: web `:3100`, api `:3101` (reservadas). Demais previstas em [MASTER-PLAN §5](MASTER-PLAN.md#5-docker); registrar no hub no scaffold (regra `40-hub-ports`).
+App (nginx) `:3100` · API `:3101` (nginx só `/api/`) · Postgres `:3110` · MinIO `127.0.0.1:3112/:3113`. Redis, worker e biometric só na rede interna. Fonte: `C:\ROBBY\config\ports.json` (id 31); mudar porta → regra `40-hub-ports`.

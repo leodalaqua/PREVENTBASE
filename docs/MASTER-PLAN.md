@@ -449,3 +449,4 @@ Pendências: nenhuma
 | Data | Mudança |
 |------|---------|
 | 07/10/2026 | Versão inicial oficial (consolida conversas anteriores) |
+| 07/10/2026 | Fase 1 implantada: stack Docker (9 serviços), API/worker/web/biometria, hub Robby (id 31, `preventbase_leitura`), docs por módulo em `docs/SUMMARY.md` |
