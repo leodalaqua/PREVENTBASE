@@ -210,8 +210,30 @@ model User {
   roles    UserRole[]
   sessions Session[]
 
+  /// Handle WebAuthn aleatório (base64url) — padrão C:\ROBBY\docs\decisions\2026-10-09-login-passkey.md
+  webauthnUserHandle String?              @unique
+  passkeys           WebauthnCredential[]
+
   @@index([tenantId])
   @@map("users")
+}
+
+/// Passkey (biometria do aparelho) para login sem senha.
+model WebauthnCredential {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  credentialId String    @unique
+  publicKey    String
+  signCount    Int       @default(0)
+  transports   String[]  @default([])
+  deviceName   String
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  lastUsedAt   DateTime? @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("webauthn_credentials")
 }
 
 model Role {

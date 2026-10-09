@@ -101,6 +101,7 @@ export class UsersController {
       });
       if (body.status === "BLOCKED" || body.password) {
         await tx.session.updateMany({ where: { userId: id, revokedAt: null }, data: { revokedAt: new Date(), revokedReason: "admin_change" } });
+        await tx.webauthnCredential.deleteMany({ where: { userId: id } });
       }
       await this.audit.record(tx, { action: "user.updated", entityType: "User", entityId: id, before, after: { ...user, passwordChanged: !!body.password } });
       return user;

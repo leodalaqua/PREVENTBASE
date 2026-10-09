@@ -67,6 +67,16 @@ export class AuthService {
     return tokens;
   }
 
+  /** Login por biometria (passkey): verificação do usuário no aparelho conta como 2 fatores, sem TOTP. */
+  async loginWithPasskey(userId: string, credentialId: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user || user.status !== "ACTIVE") throw new DomainError(401, "INVALID_CREDENTIALS", "Usuário bloqueado");
+    const tokens = await this.issue(user.id, user.tenantId, randomUUID());
+    await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
+    await this.audit.log({ tenantId: user.tenantId, userId: user.id, action: "auth.login", entityType: "User", entityId: user.id, after: { method: "passkey", credentialId: credentialId.slice(0, 12) } });
+    return tokens;
+  }
+
   private async issue(userId: string, tenantId: string, familyId: string) {
     const c = ctx();
     const sessionId = randomUUID();

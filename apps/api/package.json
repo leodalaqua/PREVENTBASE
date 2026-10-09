@@ -21,6 +21,7 @@
     "@preventbase/contracts": "workspace:*",
     "@preventbase/database": "workspace:*",
     "@preventbase/permissions": "workspace:*",
+    "@simplewebauthn/server": "^13.3.3",
     "bcryptjs": "^2.4.3",
     "bullmq": "^5.34.10",
     "exceljs": "^4.4.0",
