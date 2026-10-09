@@ -30,3 +30,9 @@ Vale para todo repo do ecossistema (mapa em `C:\ROBBY\docs\SUMMARY.md`).
 - Commits coesos: agrupar por assunto; volume grande → vários commits.
 - Mensagem: `tipo(escopo): resumo` em português (`feat`, `fix`, `refactor`, `docs`, `chore`, `config`).
 - Sem `--force`, sem `--no-verify`, sem alterar config git. Push rejeitado → `git pull --rebase` e, se houver conflito, parar e perguntar.
+
+## Versionamento `AA.MM.DD.N`
+
+- Publicar com `node C:\ROBBY\scripts\versioning\release.mjs release --repo . --push` (no lugar do `git push`): gera a versão dos commits pendentes, atualiza `CHANGELOG.md`, `VERSION` e o bloco de versão/atualizações do `README.md`, cria a tag `vAA.MM.DD.N` e faz push com tags.
+- O tipo do commit vira a seção do changelog (`feat` Novidades, `fix` Correções, `perf` Desempenho…): mensagem clara, voltada a quem usa o sistema.
+- Não editar `CHANGELOG.md`/`VERSION` nem os blocos `versao`/`atualizacoes` do README à mão. Doc: `C:\ROBBY\docs\robby\versionamento.md`.
