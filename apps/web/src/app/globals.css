@@ -1,14 +1,124 @@
 @import "tailwindcss";
 
+@theme {
+  --color-brand-50: #fffbea;
+  --color-brand-100: #fff4c5;
+  --color-brand-200: #ffe985;
+  --color-brand-300: #fddb3a;
+  --color-brand-400: #fbcb0a;
+  --color-brand-500: #f5b400;
+  --color-brand-600: #d99100;
+  --color-brand-700: #b06a02;
+  --color-brand-800: #8f5208;
+  --color-brand-900: #75430b;
+  --color-brand-950: #442302;
+}
+
 :root {
   color-scheme: light;
 }
 
+::selection {
+  background: var(--color-brand-200);
+  color: var(--color-zinc-900);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
 html,
 body {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: #f4f4f5;
+  color: #18181b;
   -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow-x: clip;
+  overscroll-behavior-y: none;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+svg,
+canvas {
+  max-width: 100%;
+}
+
+h1 {
+  font-size: clamp(1.15rem, 2.5vw + 0.6rem, 1.5rem);
+}
+
+.break-any {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+[data-pointer="coarse"] button,
+[data-pointer="coarse"] a[role="button"],
+[data-pointer="coarse"] .touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@keyframes pb-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.page-enter {
+  animation: pb-fade-in 0.18s ease-out;
+}
+
+@keyframes pb-shimmer {
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton {
+  border-radius: 0.5rem;
+  background: linear-gradient(90deg, #e4e4e7 25%, #f4f4f5 37%, #e4e4e7 63%);
+  background-size: 200% 100%;
+  animation: pb-shimmer 1.2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .page-enter,
+  .skeleton {
+    animation: none;
+  }
 }
 
 @media print {

@@ -38,31 +38,31 @@ export default function DashboardPage() {
         <Stat label="Lotes vencidos com saldo" value={c.lotsExpired} tone={c.lotsExpired ? "red" : "green"} href="/estoque?tab=alertas" />
         <Stat label="Alertas abertos" value={c.openAlerts} tone={c.openAlerts ? "amber" : "green"} href="/alertas" />
       </div>
-      <p className="mt-2 text-xs text-slate-400">ASO, treinamentos, acidentes e divergências eSocial entram nas próximas fases (plano mestre §87).</p>
+      <p className="mt-2 text-xs text-zinc-400">ASO, treinamentos, acidentes e divergências eSocial entram nas próximas fases (plano mestre §87).</p>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Card title="Consumo de EPI — 12 meses">
           {data.monthly.length === 0 ? (
-            <p className="text-sm text-slate-500">Sem entregas no período.</p>
+            <p className="text-sm text-zinc-500">Sem entregas no período.</p>
           ) : (
             <div className="flex h-44 items-end gap-2">
               {data.monthly.map((m) => (
                 <div key={m.month} className="flex flex-1 flex-col items-center gap-1" title={`${m.quantity} un. · ${fmtMoney(m.cost)}`}>
-                  <span className="text-[10px] text-slate-500">{m.quantity}</span>
-                  <div className="w-full rounded-t bg-teal-600" style={{ height: `${(m.quantity / max) * 120}px` }} />
-                  <span className="text-[10px] text-slate-500">{m.month.slice(5)}/{m.month.slice(2, 4)}</span>
+                  <span className="text-[10px] text-zinc-500">{m.quantity}</span>
+                  <div className="w-full rounded-t bg-brand-400" style={{ height: `${(m.quantity / max) * 120}px` }} />
+                  <span className="text-[10px] text-zinc-500">{m.month.slice(5)}/{m.month.slice(2, 4)}</span>
                 </div>
               ))}
             </div>
           )}
         </Card>
-        <Card title="Últimas entregas" actions={<Link href="/entregas" className="text-sm text-teal-700">ver todas</Link>}>
+        <Card title="Últimas entregas" actions={<Link href="/entregas" className="text-sm font-medium text-brand-800 hover:underline">ver todas</Link>}>
           <Table
             rows={data.recent}
             rowKey={(r) => r.id}
             columns={[
               { key: "at", label: "Data", render: (r) => fmtDateTime(r.deliveredAt) },
-              { key: "emp", label: "Colaborador", render: (r) => <Link href={`/entregas/${r.id}`} className="text-teal-700">{r.employee.name}</Link> },
+              { key: "emp", label: "Colaborador", render: (r) => <Link href={`/entregas/${r.id}`} className="font-medium text-brand-800 hover:underline">{r.employee.name}</Link> },
               { key: "items", label: "Itens", render: (r) => r.items.map((i) => `${i.quantity}× ${i.productDescription}`).join(", ") },
             ]}
           />

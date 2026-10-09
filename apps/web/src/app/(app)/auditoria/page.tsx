@@ -52,12 +52,12 @@ export default function AuditPage() {
             <p className="break-all font-mono text-xs">prev {detail.previousHash}<br />hash {detail.currentHash}</p>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <p className="text-xs font-medium uppercase text-slate-500">Antes</p>
-                <pre className="max-h-96 overflow-auto rounded bg-slate-50 p-2 text-xs">{JSON.stringify(detail.before, null, 2) ?? "—"}</pre>
+                <p className="text-xs font-medium uppercase text-zinc-500">Antes</p>
+                <pre className="max-h-96 overflow-auto rounded bg-zinc-50 p-2 text-xs">{JSON.stringify(detail.before, null, 2) ?? "—"}</pre>
               </div>
               <div>
-                <p className="text-xs font-medium uppercase text-slate-500">Depois</p>
-                <pre className="max-h-96 overflow-auto rounded bg-slate-50 p-2 text-xs">{JSON.stringify(detail.after, null, 2) ?? "—"}</pre>
+                <p className="text-xs font-medium uppercase text-zinc-500">Depois</p>
+                <pre className="max-h-96 overflow-auto rounded bg-zinc-50 p-2 text-xs">{JSON.stringify(detail.after, null, 2) ?? "—"}</pre>
               </div>
             </div>
           </div>

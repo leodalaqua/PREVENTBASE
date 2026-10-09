@@ -96,7 +96,7 @@ export default function ReturnsPage() {
           <EmployeePicker onPick={setEmployee} />
         ) : (
           <div className="grid gap-3 sm:grid-cols-2">
-            <p className="text-sm font-medium sm:col-span-2">{employee.name} <button className="text-xs text-slate-500 underline" onClick={() => setEmployee(null)}>trocar</button></p>
+            <p className="text-sm font-medium sm:col-span-2">{employee.name} <button className="text-xs text-zinc-500 underline" onClick={() => setEmployee(null)}>trocar</button></p>
             <Field label="Item entregue" className="sm:col-span-2">
               <Select value={itemId} onChange={(e) => setItemId(e.target.value)}>
                 <option value="">Selecione…</option>
@@ -117,7 +117,7 @@ export default function ReturnsPage() {
             </Field>
             <Field label="Motivo" className="sm:col-span-2"><Input value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} /></Field>
             <Field label="Observações" className="sm:col-span-2"><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></Field>
-            <p className="text-xs text-slate-500 sm:col-span-2">Só retorna ao estoque imediatamente se reutilizável e em bom estado; demais destinos passam pelo ciclo de higienização/inspeção.</p>
+            <p className="text-xs text-zinc-500 sm:col-span-2">Só retorna ao estoque imediatamente se reutilizável e em bom estado; demais destinos passam pelo ciclo de higienização/inspeção.</p>
             <div className="sm:col-span-2"><ErrorBox error={create.error} /></div>
             <div className="flex justify-end sm:col-span-2">
               <Button disabled={!item || !warehouseId || f.reason.trim().length < 2} loading={create.isPending} onClick={() => create.mutate()}>Registrar</Button>

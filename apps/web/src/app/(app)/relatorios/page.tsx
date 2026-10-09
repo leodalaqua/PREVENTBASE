@@ -49,7 +49,7 @@ function Reports() {
     <>
       <PageHeader title="Relatórios" subtitle="Todos exportáveis em PDF, XLSX e CSV" />
       <Card>
-        <div className="grid gap-3 sm:grid-cols-6">
+        <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <Field label="Relatório" className="sm:col-span-2">
             <Select value={report} onChange={(e) => setReport(e.target.value)}>
               {REPORTS.filter((r) => !("perm" in r) || can(r.perm)).map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
@@ -89,7 +89,7 @@ function Reports() {
             rowKey={(r) => JSON.stringify(r).slice(0, 200) + Math.random()}
             columns={data.columns.map((c) => ({ key: c.key, label: c.label, render: (r: Record<string, unknown>) => cell(r[c.key]) }))}
           />
-          {data.rows.length > 500 && <p className="pt-2 text-xs text-slate-500">Exibindo 500 linhas — exporte para ver todas.</p>}
+          {data.rows.length > 500 && <p className="pt-2 text-xs text-zinc-500">Exibindo 500 linhas — exporte para ver todas.</p>}
         </Card>
       )}
     </>

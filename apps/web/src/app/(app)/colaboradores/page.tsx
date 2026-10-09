@@ -28,7 +28,7 @@ export default function EmployeesPage() {
     <>
       <PageHeader title="Colaboradores" subtitle="Entidade central do PreventBase" actions={can("employee.create") && <Button onClick={() => setCreating(true)}>＋ Novo colaborador</Button>} />
       <Card>
-        <div className="mb-3 grid gap-2 sm:grid-cols-4">
+        <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Input placeholder="Nome, matrícula ou CPF" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} className="sm:col-span-2" />
           <CompanySelect allowAll value={companyId} onChange={(v) => { setCompanyId(v); setPage(1); }} />
           <Select value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>

@@ -39,7 +39,7 @@ export default function AccountPage() {
             <div className="space-y-3">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={setup.qrDataUrl} alt="QR MFA" className="h-48 w-48" />
-              <p className="break-all text-xs text-slate-500">{setup.otpauthUrl}</p>
+              <p className="break-all text-xs text-zinc-500">{setup.otpauthUrl}</p>
               <Field label="Código do aplicativo"><Input inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} /></Field>
               <ErrorBox error={enable.error} />
               <Button loading={enable.isPending} onClick={() => enable.mutate()}>Confirmar</Button>

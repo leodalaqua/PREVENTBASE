@@ -40,7 +40,7 @@ function Organization() {
       <Card title="Empresas">
         <Table rows={companies} rowKey={(c) => c.id} columns={[{ key: "n", label: "Empresa", render: (c) => companyName(c) }, { key: "c", label: "CNPJ", render: (c) => maskCnpj(c.cnpj) }]} />
         {manage && (
-          <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+          <div className="mt-3 space-y-2 border-t border-zinc-100 pt-3">
             <Input placeholder="Razão social" value={co.legalName} onChange={(e) => setCo({ ...co, legalName: e.target.value })} />
             <Input placeholder="Nome fantasia" value={co.tradeName} onChange={(e) => setCo({ ...co, tradeName: e.target.value })} />
             <Input placeholder="CNPJ" value={co.cnpj} onChange={(e) => setCo({ ...co, cnpj: e.target.value })} />
@@ -52,7 +52,7 @@ function Organization() {
       <Card title="Estabelecimentos">
         <Table rows={ests} rowKey={(e) => e.id} columns={[{ key: "n", label: "Nome", render: (e) => e.name }, { key: "c", label: "Empresa", render: (e) => companyName(e.company) }]} />
         {manage && (
-          <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+          <div className="mt-3 space-y-2 border-t border-zinc-100 pt-3">
             <CompanySelect value={es.companyId} onChange={(v) => setEs({ ...es, companyId: v })} />
             <Input placeholder="Nome" value={es.name} onChange={(e) => setEs({ ...es, name: e.target.value })} />
             <Input placeholder="Código" value={es.code} onChange={(e) => setEs({ ...es, code: e.target.value })} />
@@ -65,7 +65,7 @@ function Organization() {
       <Card title="Setores">
         <Table rows={deps} rowKey={(d) => d.id} columns={[{ key: "n", label: "Setor", render: (d) => d.name }, { key: "e", label: "Estabelecimento", render: (d) => d.establishment?.name ?? "—" }]} />
         {manage && (
-          <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+          <div className="mt-3 space-y-2 border-t border-zinc-100 pt-3">
             <Select value={dp.establishmentId} onChange={(e) => setDp({ ...dp, establishmentId: e.target.value })}>
               <option value="">Estabelecimento…</option>
               {ests?.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
@@ -105,14 +105,14 @@ function Jobs() {
           rowKey={(j) => j.id}
           onRow={setJob}
           columns={[
-            { key: "n", label: "Função", render: (j) => <span className={job?.id === j.id ? "font-semibold text-teal-800" : ""}>{j.name}</span> },
+            { key: "n", label: "Função", render: (j) => <span className={job?.id === j.id ? "font-semibold text-brand-800" : ""}>{j.name}</span> },
             { key: "c", label: "CBO", render: (j) => j.cbo ?? "—" },
             { key: "e", label: "Colab.", render: (j) => j._count?.employees ?? 0 },
             { key: "r", label: "EPIs", render: (j) => j._count?.epiRequirements ?? 0 },
           ]}
         />
         {manage && (
-          <div className="mt-3 grid gap-2 border-t border-slate-100 pt-3 sm:grid-cols-2">
+          <div className="mt-3 grid gap-2 border-t border-zinc-100 pt-3 sm:grid-cols-2">
             <CompanySelect value={nj.companyId} onChange={(v) => setNj({ ...nj, companyId: v })} />
             <Input placeholder="Nome da função" value={nj.name} onChange={(e) => setNj({ ...nj, name: e.target.value })} />
             <Input placeholder="CBO" value={nj.cbo} onChange={(e) => setNj({ ...nj, cbo: e.target.value })} />
@@ -123,7 +123,7 @@ function Jobs() {
       </Card>
       <Card title={job ? `Matriz Função × EPI — ${job.name}` : "Matriz Função × EPI"} actions={job && manage && <Button onClick={() => setPicking(true)}>＋ EPI obrigatório</Button>}>
         {!job ? (
-          <p className="text-sm text-slate-500">Selecione uma função.</p>
+          <p className="text-sm text-zinc-500">Selecione uma função.</p>
         ) : (
           <Table
             rows={reqs}
@@ -160,7 +160,7 @@ function Warehouses() {
     <Card title="Almoxarifados">
       <Table rows={data} rowKey={(w) => w.id} columns={[{ key: "n", label: "Nome", render: (w) => w.name }, { key: "c", label: "Código", render: (w) => w.code }, { key: "k", label: "Tipo", render: (w) => w.kind }, { key: "e", label: "Estabelecimento", render: (w) => w.establishment?.name ?? "—" }, { key: "l", label: "Localizações", render: (w) => w.locations.map((l) => l.code).join(", ") }]} />
       {can("organization.manage") && (
-        <div className="mt-3 grid gap-2 border-t border-slate-100 pt-3 sm:grid-cols-5">
+        <div className="mt-3 grid gap-2 border-t border-zinc-100 pt-3 sm:grid-cols-2 lg:grid-cols-5">
           <Select value={f.establishmentId} onChange={(e) => setF({ ...f, establishmentId: e.target.value })}>
             <option value="">Estabelecimento…</option>
             {ests?.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
@@ -288,7 +288,7 @@ function Settings() {
           ]}
         />
         {can("settings.manage") && (
-          <div className="mt-3 grid gap-2 border-t border-slate-100 pt-3 sm:grid-cols-3">
+          <div className="mt-3 grid gap-2 border-t border-zinc-100 pt-3 sm:grid-cols-3">
             <Input placeholder="CÓDIGO" value={r.code} onChange={(e) => setR({ ...r, code: e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, "") })} />
             <Input placeholder="Nome" value={r.name} onChange={(e) => setR({ ...r, name: e.target.value })} />
             <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={r.requiresJustification} onChange={(e) => setR({ ...r, requiresJustification: e.target.checked })} /> exige justificativa</label>
@@ -299,11 +299,11 @@ function Settings() {
       </Card>
       {can("settings.manage") && (
         <Card title={`Termo de entrega ${active ? `(v${active.version} vigente)` : ""}`}>
-          {active && <p className="mb-3 whitespace-pre-line rounded bg-slate-50 p-3 text-sm">{active.text}</p>}
+          {active && <p className="mb-3 whitespace-pre-line rounded bg-zinc-50 p-3 text-sm">{active.text}</p>}
           <Field label="Nova versão" hint="Publicar cria nova versão; entregas antigas mantêm a versão aceita."><Textarea rows={5} value={text} onChange={(e) => setText(e.target.value)} /></Field>
           <ErrorBox error={saveTerms.error} />
           <Button className="mt-2" loading={saveTerms.isPending} disabled={text.trim().length < 20} onClick={() => saveTerms.mutate(undefined)}>Publicar versão</Button>
-          {terms && terms.length > 1 && <p className="mt-3 text-xs text-slate-500">Histórico: {terms.map((t) => `v${t.version} (${fmtDateTime(t.createdAt)})`).join(", ")}</p>}
+          {terms && terms.length > 1 && <p className="mt-3 text-xs text-zinc-500">Histórico: {terms.map((t) => `v${t.version} (${fmtDateTime(t.createdAt)})`).join(", ")}</p>}
         </Card>
       )}
       {lgpd && (

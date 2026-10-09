@@ -24,7 +24,7 @@ export default function DevicePage() {
         {status ? (
           <div className="space-y-2 text-sm">
             <p>Situação: {status === "TRUSTED" ? <Badge color="green">Autorizado</Badge> : status === "PENDING" ? <Badge color="amber">Aguardando aprovação</Badge> : <Badge color="red">Bloqueado</Badge>}</p>
-            {status === "PENDING" && <p className="text-slate-600">Peça ao administrador para aprovar em Administração › Dispositivos.</p>}
+            {status === "PENDING" && <p className="text-zinc-600">Peça ao administrador para aprovar em Administração › Dispositivos.</p>}
             <Button variant="secondary" onClick={reload}>Atualizar</Button>
           </div>
         ) : (

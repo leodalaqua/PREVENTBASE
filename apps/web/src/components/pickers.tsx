@@ -66,14 +66,14 @@ export function EmployeePicker({ onPick }: { onPick: (e: EmployeeLite) => void }
   return (
     <div className="space-y-2">
       <Input autoFocus placeholder="Nome, matrícula ou CPF" value={q} onChange={(e) => setQ(e.target.value)} />
-      {isFetching && <p className="text-xs text-slate-500">Buscando…</p>}
-      <ul className="divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white empty:hidden">
+      {isFetching && <p className="text-xs text-zinc-500">Buscando…</p>}
+      <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200 bg-white empty:hidden">
         {data?.items.map((e) => (
           <li key={e.id}>
-            <button className="flex w-full items-center justify-between gap-2 px-3 py-3 text-left hover:bg-slate-50" onClick={() => onPick(e)}>
+            <button className="flex w-full items-center justify-between gap-2 px-3 py-3 text-left hover:bg-zinc-50" onClick={() => onPick(e)}>
               <span>
                 <span className="block font-medium">{e.name}</span>
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-zinc-500">
                   {e.registration ?? "s/ matrícula"} · {maskCpf(e.cpf)} · {e.job?.name ?? "sem função"} · {companyName(e.company)}
                 </span>
               </span>
@@ -82,7 +82,7 @@ export function EmployeePicker({ onPick }: { onPick: (e: EmployeeLite) => void }
           </li>
         ))}
       </ul>
-      {term.length >= 2 && data?.items.length === 0 && <p className="text-sm text-slate-500">Nenhum colaborador ativo encontrado.</p>}
+      {term.length >= 2 && data?.items.length === 0 && <p className="text-sm text-zinc-500">Nenhum colaborador ativo encontrado.</p>}
     </div>
   );
 }
@@ -175,7 +175,7 @@ export function EpiPicker({ onPick }: { onPick: (p: PickedVariant) => void }) {
             </Button>
           ))}
         </div>
-        <button className="text-xs text-slate-500 underline" onClick={() => setProduct(null)}>
+        <button className="text-xs text-zinc-500 underline" onClick={() => setProduct(null)}>
           trocar EPI
         </button>
       </div>
@@ -198,11 +198,11 @@ export function EpiPicker({ onPick }: { onPick: (p: PickedVariant) => void }) {
         <ScanButton onCode={(c) => void scan(c)} />
       </div>
       {error && <p className="text-xs text-red-700">{error}</p>}
-      <ul className="max-h-64 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200 bg-white">
+      <ul className="max-h-64 divide-y divide-zinc-100 overflow-y-auto rounded-lg border border-zinc-200 bg-white">
         {data?.items.map((p) => (
           <li key={p.id}>
             <button
-              className="w-full px-3 py-2 text-left text-sm hover:bg-slate-50"
+              className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-50"
               onClick={() => {
                 const active = p.variants.filter((v) => v.active);
                 if (active.length === 1) onPick({ product: p, variant: active[0]! });
@@ -210,7 +210,7 @@ export function EpiPicker({ onPick }: { onPick: (p: PickedVariant) => void }) {
               }}
             >
               <span className="font-medium">{p.description}</span>
-              <span className="block text-xs text-slate-500">
+              <span className="block text-xs text-zinc-500">
                 {p.internalCode} · CA {p.cas[0]?.caNumber ?? "—"} · {p.variants.length} variação(ões)
               </span>
             </button>

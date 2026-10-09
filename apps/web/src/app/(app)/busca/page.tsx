@@ -29,11 +29,11 @@ function Results() {
       <div className="grid gap-4 md:grid-cols-2">
         {data.employees.length > 0 && (
           <Card title="Colaboradores">
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-zinc-100">
               {data.employees.map((e) => (
                 <li key={e.id} className="flex items-center justify-between py-2 text-sm">
-                  <Link href={`/colaboradores/${e.id}`} className="text-teal-700">{e.name}</Link>
-                  <span className="flex items-center gap-2 text-slate-500">
+                  <Link href={`/colaboradores/${e.id}`} className="font-medium text-brand-800 hover:underline">{e.name}</Link>
+                  <span className="flex items-center gap-2 text-zinc-500">
                     {e.registration} · {e.job?.name ?? "sem função"} <StatusBadge status={e.status} />
                   </span>
                 </li>
@@ -43,10 +43,10 @@ function Results() {
         )}
         {data.epis.length > 0 && (
           <Card title="EPIs">
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-zinc-100">
               {data.epis.map((e) => (
                 <li key={e.id} className="py-2 text-sm">
-                  <Link href={`/epis/${e.id}`} className="text-teal-700">{e.internalCode} — {e.description}</Link>
+                  <Link href={`/epis/${e.id}`} className="font-medium text-brand-800 hover:underline">{e.internalCode} — {e.description}</Link>
                 </li>
               ))}
             </ul>
@@ -55,13 +55,13 @@ function Results() {
         {data.ca && (
           <Card title={`CA ${data.ca.caNumber}`}>
             <p className="text-sm">{data.ca.equipmentName}</p>
-            <p className="text-sm text-slate-500">{data.ca.manufacturerName} · validade {fmtDate(data.ca.validUntil)} · {data.ca.situation}</p>
-            <Link href={`/ca?n=${data.ca.caNumber}`} className="text-sm text-teal-700">Detalhes</Link>
+            <p className="text-sm text-zinc-500">{data.ca.manufacturerName} · validade {fmtDate(data.ca.validUntil)} · {data.ca.situation}</p>
+            <Link href={`/ca?n=${data.ca.caNumber}`} className="text-sm font-medium text-brand-800 hover:underline">Detalhes</Link>
           </Card>
         )}
         {data.lots.length > 0 && (
           <Card title="Lotes">
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-zinc-100">
               {data.lots.map((l) => (
                 <li key={l.id} className="py-2 text-sm">
                   {l.variant.product.description} — lote {l.lotNumber} ({l.publicCode}) · CA {l.caNumber} · val. {fmtDate(l.expiryDate)}
@@ -72,9 +72,9 @@ function Results() {
         )}
         {data.documents.length > 0 && (
           <Card title="Documentos">
-            <ul className="divide-y divide-slate-100">
+            <ul className="divide-y divide-zinc-100">
               {data.documents.map((d) => (
-                <li key={d.id} className="py-2 text-sm">{d.title} <span className="text-slate-400">({d.entityType})</span></li>
+                <li key={d.id} className="py-2 text-sm">{d.title} <span className="text-zinc-400">({d.entityType})</span></li>
               ))}
             </ul>
           </Card>

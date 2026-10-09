@@ -132,7 +132,7 @@ export function BiometricCapture({
 
   return (
     <div className="space-y-3">
-      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-slate-900 sm:aspect-video">
+      <div className="relative aspect-[3/4] w-full overflow-hidden rounded-xl bg-zinc-900 sm:aspect-video">
         <video ref={video} playsInline muted className={cx("h-full w-full object-cover", facing === "user" && "-scale-x-100")} />
         {phase === "idle" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center text-white">
@@ -148,7 +148,7 @@ export function BiometricCapture({
         {phase === "done" && <div className="absolute inset-0 flex items-center justify-center bg-emerald-700/80 text-xl font-semibold text-white">✔ {purpose === "ENROLL" ? "Biometria cadastrada" : "Identidade confirmada"}</div>}
       </div>
 
-      {challenge && phase === "ready" && <p className="text-sm text-slate-600">Desafio: {challenge.instruction}</p>}
+      {challenge && phase === "ready" && <p className="text-sm text-zinc-600">Desafio: {challenge.instruction}</p>}
       {result && !result.verified && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
           Não confirmado: {result.reason ?? "rosto não corresponde"}{result.liveness ? ` (similaridade ${result.score.toFixed(2)})` : ""}. Tente novamente.

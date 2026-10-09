@@ -1,7 +1,8 @@
 "use client";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { type ReactNode, useEffect, useState } from "react";
+import { type ReactNode, useState } from "react";
+import { PwaProvider } from "@/components/pwa";
 import { ToastProvider } from "@/components/ui";
 import { ApiError } from "@/lib/api";
 
@@ -11,19 +12,20 @@ export function Providers({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 15_000,
+            staleTime: 30_000,
+            gcTime: 10 * 60_000,
             refetchOnWindowFocus: false,
+            refetchOnReconnect: true,
             retry: (count, err) => !(err instanceof ApiError && err.status < 500) && count < 2,
           },
         },
       }),
   );
-  useEffect(() => {
-    if ("serviceWorker" in navigator && process.env.NODE_ENV === "production") navigator.serviceWorker.register("/sw.js").catch(() => undefined);
-  }, []);
   return (
     <QueryClientProvider client={client}>
-      <ToastProvider>{children}</ToastProvider>
+      <PwaProvider>
+        <ToastProvider>{children}</ToastProvider>
+      </PwaProvider>
     </QueryClientProvider>
   );
 }

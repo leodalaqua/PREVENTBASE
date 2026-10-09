@@ -117,7 +117,7 @@ export default function EmployeePage({ params }: { params: Promise<{ id: string 
               ]}
             />
           </Card>
-          <p className="text-xs text-slate-400">Exames/ASO, treinamentos, riscos e eventos eSocial (somente leitura) entram nas próximas fases do plano mestre.</p>
+          <p className="text-xs text-zinc-400">Exames/ASO, treinamentos, riscos e eventos eSocial (somente leitura) entram nas próximas fases do plano mestre.</p>
         </div>
       )}
 
@@ -136,7 +136,7 @@ export default function EmployeePage({ params }: { params: Promise<{ id: string 
             rowKey={(r) => r.id}
             empty="Nenhuma entrega."
             columns={[
-              { key: "d", label: "Data", render: (r) => <Link className="text-teal-700" href={`/entregas/${r.delivery.id}`}>{fmtDateTime(r.delivery.deliveredAt)}</Link> },
+              { key: "d", label: "Data", render: (r) => <Link className="font-medium text-brand-800 hover:underline" href={`/entregas/${r.delivery.id}`}>{fmtDateTime(r.delivery.deliveredAt)}</Link> },
               { key: "p", label: "EPI", render: (r) => r.productDescription },
               { key: "q", label: "Qtd", render: (r) => r.quantity },
               { key: "ca", label: "CA", render: (r) => r.caNumber },
@@ -155,8 +155,8 @@ export default function EmployeePage({ params }: { params: Promise<{ id: string 
               <p>
                 <Badge color="green">Cadastrada</Badge> em {fmtDateTime(data.biometric.enrolledAt)} · qualidade {(data.biometric.quality * 100).toFixed(0)}%
               </p>
-              <p className="text-slate-500">Base legal: {data.biometric.legalBasis}</p>
-              <p className="text-xs text-slate-400">O template é cifrado e fica isolado no serviço de biometria; nenhuma imagem é armazenada.</p>
+              <p className="text-zinc-500">Base legal: {data.biometric.legalBasis}</p>
+              <p className="text-xs text-zinc-400">O template é cifrado e fica isolado no serviço de biometria; nenhuma imagem é armazenada.</p>
               <div className="flex flex-wrap gap-2">
                 {can("biometric.enroll") && <Button variant="secondary" onClick={() => setEnrolling(true)}>Recadastrar</Button>}
                 {can("biometric.revoke") && <Button variant="danger" onClick={() => setRevoking(true)}>Revogar</Button>}
@@ -165,11 +165,11 @@ export default function EmployeePage({ params }: { params: Promise<{ id: string 
           ) : can("biometric.enroll") ? (
             enrolling ? null : <Button onClick={() => setEnrolling(true)}>Cadastrar biometria</Button>
           ) : (
-            <p className="text-sm text-slate-500">Sem biometria cadastrada.</p>
+            <p className="text-sm text-zinc-500">Sem biometria cadastrada.</p>
           )}
           {enrolling && (
             <div className="mt-4 max-w-xl">
-              <p className="mb-2 text-sm text-slate-600">Finalidade: comprovação de recebimento de EPI (NR-6). Informe o colaborador antes da captura (LGPD art. 9º).</p>
+              <p className="mb-2 text-sm text-zinc-600">Finalidade: comprovação de recebimento de EPI (NR-6). Informe o colaborador antes da captura (LGPD art. 9º).</p>
               <BiometricCapture
                 employeeId={id}
                 purpose="ENROLL"
@@ -189,13 +189,13 @@ export default function EmployeePage({ params }: { params: Promise<{ id: string 
           {!timeline ? (
             <Loading />
           ) : (
-            <ol className="relative space-y-4 border-l border-slate-200 pl-5">
+            <ol className="relative space-y-4 border-l border-zinc-200 pl-5">
               {timeline.map((ev) => (
                 <li key={`${ev.type}:${ev.ref}:${ev.at}`}>
-                  <span className={`absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full ${ev.type.includes("cancel") || ev.type.includes("revoked") ? "bg-red-500" : "bg-teal-600"}`} />
-                  <p className="text-xs text-slate-500">{fmtDateTime(ev.at)}</p>
+                  <span className={`absolute -left-1.5 mt-1.5 h-3 w-3 rounded-full ${ev.type.includes("cancel") || ev.type.includes("revoked") ? "bg-red-500" : "bg-brand-500"}`} />
+                  <p className="text-xs text-zinc-500">{fmtDateTime(ev.at)}</p>
                   <p className="text-sm font-medium">{ev.title}</p>
-                  {ev.detail && <p className="text-sm text-slate-600">{ev.detail}</p>}
+                  {ev.detail && <p className="text-sm text-zinc-600">{ev.detail}</p>}
                 </li>
               ))}
             </ol>
@@ -214,7 +214,7 @@ export default function EmployeePage({ params }: { params: Promise<{ id: string 
       </Modal>
       <Modal open={revoking} title="Revogar biometria" onClose={() => setRevoking(false)}>
         <div className="space-y-3">
-          <p className="text-sm text-slate-600">O template será eliminado do serviço de biometria. Entregas futuras exigirão novo cadastro. O histórico de entregas permanece íntegro.</p>
+          <p className="text-sm text-zinc-600">O template será eliminado do serviço de biometria. Entregas futuras exigirão novo cadastro. O histórico de entregas permanece íntegro.</p>
           <Field label="Motivo">
             <Input value={revokeReason} onChange={(ev) => setRevokeReason(ev.target.value)} />
           </Field>

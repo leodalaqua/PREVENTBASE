@@ -39,10 +39,10 @@ export default function AlertsPage() {
                 <div>
                   <p className="flex items-center gap-2 font-medium">
                     <Badge color={SEV[n.severity]}>{n.severity === "CRITICAL" ? "Crítico" : n.severity === "WARNING" ? "Atenção" : "Info"}</Badge>
-                    {n.entityType && n.entityId && LINK[n.entityType] ? <Link href={LINK[n.entityType]!(n.entityId)} className="text-teal-800 hover:underline">{n.title}</Link> : n.title}
+                    {n.entityType && n.entityId && LINK[n.entityType] ? <Link href={LINK[n.entityType]!(n.entityId)} className="font-medium text-brand-800 hover:underline">{n.title}</Link> : n.title}
                   </p>
-                  {n.body && <p className="mt-1 text-sm text-slate-600">{n.body}</p>}
-                  <p className="mt-1 text-xs text-slate-400">{fmtDateTime(n.createdAt)}{n.resolvedAt && ` · resolvido ${fmtDateTime(n.resolvedAt)}`}</p>
+                  {n.body && <p className="mt-1 text-sm text-zinc-600">{n.body}</p>}
+                  <p className="mt-1 text-xs text-zinc-400">{fmtDateTime(n.createdAt)}{n.resolvedAt && ` · resolvido ${fmtDateTime(n.resolvedAt)}`}</p>
                 </div>
                 {!n.readAt && !n.resolvedAt && <Button variant="ghost" onClick={() => read.mutate(n.id)}>Marcar como lido</Button>}
               </div>

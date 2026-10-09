@@ -34,7 +34,7 @@ export default function DeliveriesPage() {
     <>
       <PageHeader title="Entregas de EPI" actions={can("epi.deliver") && <LinkButton href="/entregas/nova">＋ Nova entrega</LinkButton>} />
       <Card>
-        <div className="mb-3 grid gap-2 sm:grid-cols-5">
+        <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
           <Input placeholder="Colaborador ou matrícula" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} className="sm:col-span-2" />
           <Input type="date" value={from} onChange={(e) => setFrom(e.target.value)} />
           <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />

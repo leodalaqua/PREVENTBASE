@@ -74,20 +74,20 @@ function CaContent() {
       {data && (
         <Card className="mt-4" title={`CA ${data.caNumber}`} actions={data.found && (data.validToday ? <Badge color="green">válido hoje</Badge> : <Badge color="red">vencido hoje</Badge>)}>
           {!data.found ? (
-            <p className="text-sm text-slate-500">CA não encontrado na base local. Última sincronização: {fmtDateTime(data.lastSyncAt)}.</p>
+            <p className="text-sm text-zinc-500">CA não encontrado na base local. Última sincronização: {fmtDateTime(data.lastSyncAt)}.</p>
           ) : (
             <div className="space-y-4">
               <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
-                <div><dt className="text-xs text-slate-500">Validade</dt><dd className="font-medium">{fmtDate(data.ca?.validUntil)}</dd></div>
-                <div><dt className="text-xs text-slate-500">Situação</dt><dd>{data.ca?.situation}</dd></div>
+                <div><dt className="text-xs text-zinc-500">Validade</dt><dd className="font-medium">{fmtDate(data.ca?.validUntil)}</dd></div>
+                <div><dt className="text-xs text-zinc-500">Situação</dt><dd>{data.ca?.situation}</dd></div>
                 {FIELDS.filter(([k]) => data.ca?.[k]).map(([k, label]) => (
-                  <div key={k}><dt className="text-xs text-slate-500">{label}</dt><dd>{data.ca?.[k]}</dd></div>
+                  <div key={k}><dt className="text-xs text-zinc-500">{label}</dt><dd>{data.ca?.[k]}</dd></div>
                 ))}
               </dl>
-              <p className="rounded-lg bg-slate-50 p-3 text-xs text-slate-600">{data.note}</p>
+              <p className="rounded-lg bg-zinc-50 p-3 text-xs text-zinc-600">{data.note}</p>
               {data.products.length > 0 && <p className="text-sm">EPIs do catálogo com este CA: {data.products.map((p) => p.product.description).join(", ")}</p>}
-              {data.history.length > 0 && <p className="text-xs text-slate-500">Alterações registradas: {data.history.map((h) => `${fmtDate(h.changedAt)} (${h.changedFields.join(", ")})`).join("; ")}</p>}
-              <p className="text-xs text-slate-400">Base atualizada em {fmtDateTime(data.lastSyncAt)}.</p>
+              {data.history.length > 0 && <p className="text-xs text-zinc-500">Alterações registradas: {data.history.map((h) => `${fmtDate(h.changedAt)} (${h.changedFields.join(", ")})`).join("; ")}</p>}
+              <p className="text-xs text-zinc-400">Base atualizada em {fmtDateTime(data.lastSyncAt)}.</p>
             </div>
           )}
         </Card>

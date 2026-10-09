@@ -98,20 +98,20 @@ export default function EpiPage({ params }: { params: Promise<{ id: string }> })
           <Card title="Certificado de Aprovação (base CAEPI)">
             {p.ca ? (
               <dl className="space-y-2 text-sm">
-                <div><dt className="text-xs text-slate-500">CA</dt><dd className="font-medium">{p.ca.caNumber} {caExpired ? <Badge color="amber">vencido hoje</Badge> : <Badge color="green">válido</Badge>}</dd></div>
-                <div><dt className="text-xs text-slate-500">Validade</dt><dd>{fmtDate(p.ca.validUntil)} · {p.ca.situation}</dd></div>
-                <div><dt className="text-xs text-slate-500">Equipamento</dt><dd>{p.ca.equipmentName}</dd></div>
-                <div><dt className="text-xs text-slate-500">Fabricante</dt><dd>{p.ca.manufacturerName}</dd></div>
-                {p.ca.approvedFor && <div><dt className="text-xs text-slate-500">Aprovado para</dt><dd>{p.ca.approvedFor}</dd></div>}
-                {p.ca.restrictions && <div><dt className="text-xs text-slate-500">Restrições</dt><dd>{p.ca.restrictions}</dd></div>}
+                <div><dt className="text-xs text-zinc-500">CA</dt><dd className="font-medium">{p.ca.caNumber} {caExpired ? <Badge color="amber">vencido hoje</Badge> : <Badge color="green">válido</Badge>}</dd></div>
+                <div><dt className="text-xs text-zinc-500">Validade</dt><dd>{fmtDate(p.ca.validUntil)} · {p.ca.situation}</dd></div>
+                <div><dt className="text-xs text-zinc-500">Equipamento</dt><dd>{p.ca.equipmentName}</dd></div>
+                <div><dt className="text-xs text-zinc-500">Fabricante</dt><dd>{p.ca.manufacturerName}</dd></div>
+                {p.ca.approvedFor && <div><dt className="text-xs text-zinc-500">Aprovado para</dt><dd>{p.ca.approvedFor}</dd></div>}
+                {p.ca.restrictions && <div><dt className="text-xs text-zinc-500">Restrições</dt><dd>{p.ca.restrictions}</dd></div>}
                 {caExpired && <p className="text-xs text-amber-700">Lotes comprados enquanto o CA era válido continuam podendo ser entregues (CA válido na compra ≠ CA válido hoje).</p>}
               </dl>
             ) : (
-              <p className="text-sm text-slate-500">{p.cas.length ? "CA não encontrado na base CAEPI local — sincronize em Consulta CA." : "Sem CA vinculado."}</p>
+              <p className="text-sm text-zinc-500">{p.cas.length ? "CA não encontrado na base CAEPI local — sincronize em Consulta CA." : "Sem CA vinculado."}</p>
             )}
             {p.cas.length > 1 && (
               <div className="mt-4">
-                <p className="text-xs font-medium uppercase text-slate-500">Histórico de CA</p>
+                <p className="text-xs font-medium uppercase text-zinc-500">Histórico de CA</p>
                 <ul className="text-sm">{p.cas.map((c) => <li key={c.caNumber + c.linkedAt}>{c.caNumber} — desde {fmtDate(c.linkedAt)} {c.isCurrent && <Badge color="green">atual</Badge>}</li>)}</ul>
               </div>
             )}

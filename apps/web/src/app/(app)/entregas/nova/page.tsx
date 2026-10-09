@@ -163,7 +163,7 @@ function Wizard() {
       <PageHeader title="Entrega de EPI" subtitle="Validação legal no servidor · biometria facial 1:1 com prova de vida" />
       <ol className="mb-4 flex gap-1 overflow-x-auto text-xs">
         {STEPS.map((s, i) => (
-          <li key={s} className={cx("flex-1 whitespace-nowrap rounded-full px-3 py-1 text-center", i === step ? "bg-teal-700 text-white" : i < step ? "bg-teal-100 text-teal-800" : "bg-slate-200 text-slate-500")}>
+          <li key={s} className={cx("flex-1 whitespace-nowrap rounded-full px-3 py-1 text-center", i === step ? "bg-brand-400 font-semibold text-zinc-900" : i < step ? "bg-brand-100 text-brand-900" : "bg-zinc-200 text-zinc-500")}>
             {i + 1}. {s}
           </li>
         ))}
@@ -191,7 +191,7 @@ function Wizard() {
             title={employee.name}
             actions={<Button variant="ghost" onClick={() => { setEmployee(null); setLines([]); setStep(0); }}>Trocar</Button>}
           >
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-zinc-600">
               {employee.registration ?? "s/ matrícula"} · {employee.job?.name ?? "sem função"} · {employee.department?.name ?? "sem setor"} · {companyName(employee.company)}
             </p>
             {sst && !sst.biometric && <p className="mt-2 text-sm text-red-700">Colaborador sem biometria cadastrada — <Link className="underline" href={`/colaboradores/${employee.id}`}>cadastre antes da entrega</Link>.</p>}
@@ -217,11 +217,11 @@ function Wizard() {
               {lines.map((l, i) => {
                 const reason = activeReasons.find((r) => r.code === l.reasonCode);
                 return (
-                  <div key={l.key} className="rounded-lg border border-slate-200 p-3">
+                  <div key={l.key} className="rounded-lg border border-zinc-200 p-3">
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="font-medium">{l.product.description}</p>
-                        <p className="text-xs text-slate-500">{variantLabel(l.variant)} · SKU {l.variant.sku} · CA {l.product.cas[0]?.caNumber ?? "—"}{l.lotId ? " · lote escaneado" : ""}</p>
+                        <p className="text-xs text-zinc-500">{variantLabel(l.variant)} · SKU {l.variant.sku} · CA {l.product.cas[0]?.caNumber ?? "—"}{l.lotId ? " · lote escaneado" : ""}</p>
                       </div>
                       <button className="text-sm text-red-600" onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))}>remover</button>
                     </div>
@@ -244,7 +244,7 @@ function Wizard() {
                       </Field>
                     )}
                     {!reason?.requiresJustification && !l.justification && (
-                      <button className="mt-1 text-xs text-slate-500 underline" onClick={() => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, justification: " " } : x)))}>adicionar justificativa</button>
+                      <button className="mt-1 text-xs text-zinc-500 underline" onClick={() => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, justification: " " } : x)))}>adicionar justificativa</button>
                     )}
                   </div>
                 );
@@ -269,21 +269,21 @@ function Wizard() {
           {prepared.items.map((it) => (
             <Card key={it.index} title={`${it.quantity}× ${it.productDescription ?? "?"}`}>
               <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-3">
-                <div><dt className="text-xs text-slate-500">Lote (FEFO)</dt><dd>{it.lot?.lotNumber ?? "—"}</dd></div>
-                <div><dt className="text-xs text-slate-500">Validade do lote</dt><dd>{fmtDate(it.lot?.expiryDate)}</dd></div>
-                <div><dt className="text-xs text-slate-500">CA</dt><dd>{it.lot?.caNumber ?? "—"}</dd></div>
+                <div><dt className="text-xs text-zinc-500">Lote (FEFO)</dt><dd>{it.lot?.lotNumber ?? "—"}</dd></div>
+                <div><dt className="text-xs text-zinc-500">Validade do lote</dt><dd>{fmtDate(it.lot?.expiryDate)}</dd></div>
+                <div><dt className="text-xs text-zinc-500">CA</dt><dd>{it.lot?.caNumber ?? "—"}</dd></div>
                 <div>
-                  <dt className="text-xs text-slate-500">CA na compra</dt>
+                  <dt className="text-xs text-zinc-500">CA na compra</dt>
                   <dd>{it.lot?.caValidAtPurchase === true ? <Badge color="green">válido</Badge> : it.lot?.caValidAtPurchase === false ? <Badge color="red">vencido</Badge> : <Badge color="amber">não verificado</Badge>}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs text-slate-500">CA hoje</dt>
+                  <dt className="text-xs text-zinc-500">CA hoje</dt>
                   <dd>{it.caToday ? <>{it.caToday.validToday ? <Badge color="green">válido</Badge> : <Badge color="amber">vencido</Badge>} {fmtDate(it.caToday.validUntil)}</> : "sem base CAEPI"}</dd>
                 </div>
-                <div><dt className="text-xs text-slate-500">Próxima troca</dt><dd>{fmtDate(it.nextReplacementDue)}</dd></div>
-                <div><dt className="text-xs text-slate-500">Motivo</dt><dd>{it.reasonName}{it.isEarlyReplacement && " (troca antecipada)"}</dd></div>
-                <div><dt className="text-xs text-slate-500">Saldo no lote</dt><dd>{it.available}</dd></div>
-                <div><dt className="text-xs text-slate-500">Fabricante</dt><dd>{it.manufacturer ?? "—"}</dd></div>
+                <div><dt className="text-xs text-zinc-500">Próxima troca</dt><dd>{fmtDate(it.nextReplacementDue)}</dd></div>
+                <div><dt className="text-xs text-zinc-500">Motivo</dt><dd>{it.reasonName}{it.isEarlyReplacement && " (troca antecipada)"}</dd></div>
+                <div><dt className="text-xs text-zinc-500">Saldo no lote</dt><dd>{it.available}</dd></div>
+                <div><dt className="text-xs text-zinc-500">Fabricante</dt><dd>{it.manufacturer ?? "—"}</dd></div>
               </dl>
               {it.errors.map((e) => <p key={e} className="mt-2 text-sm text-red-700">✖ {e}</p>)}
               {it.warnings.map((w) => <p key={w} className="mt-2 text-sm text-amber-700">⚠ {w}</p>)}
@@ -299,11 +299,11 @@ function Wizard() {
       {step === 3 && prepared?.terms && employee && (
         <div className="space-y-4">
           <Card title={`Termo de recebimento — versão ${prepared.terms.version}`}>
-            <p className="whitespace-pre-line text-sm text-slate-700">{prepared.terms.text}</p>
-            <ul className="mt-3 list-inside list-disc text-sm text-slate-600">
+            <p className="whitespace-pre-line text-sm text-zinc-700">{prepared.terms.text}</p>
+            <ul className="mt-3 list-inside list-disc text-sm text-zinc-600">
               {prepared.items.map((it) => <li key={it.index}>{it.quantity}× {it.productDescription} — CA {it.lot?.caNumber} — lote {it.lot?.lotNumber}</li>)}
             </ul>
-            <label className="mt-4 flex items-start gap-3 rounded-lg border-2 border-teal-600 bg-teal-50 p-3 text-sm">
+            <label className="mt-4 flex items-start gap-3 rounded-lg border-2 border-brand-400 bg-brand-50 p-3 text-sm">
               <input type="checkbox" className="mt-1 h-5 w-5" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
               <span><strong>{employee.name}</strong> confirma que recebeu os EPIs acima, foi orientado(a) sobre uso, guarda e conservação e está ciente das obrigações da NR-6.</span>
             </label>
@@ -332,8 +332,8 @@ function Wizard() {
           <div className="space-y-3 text-center">
             <p className="text-4xl">✔</p>
             <p className="text-lg font-semibold">Entrega registrada{created.replayed ? " (já registrada anteriormente)" : ""}</p>
-            <p className="text-sm text-slate-500">{fmtDateTime(created.deliveredAt)} · código {created.publicId}</p>
-            <p className="break-all font-mono text-xs text-slate-400">SHA-256 {created.hash}</p>
+            <p className="text-sm text-zinc-500">{fmtDateTime(created.deliveredAt)} · código {created.publicId}</p>
+            <p className="break-all font-mono text-xs text-zinc-400">SHA-256 {created.hash}</p>
             {created.warnings?.map((w) => <p key={w} className="text-sm text-amber-700">⚠ {w}</p>)}
             <div className="flex flex-wrap justify-center gap-2 pt-2">
               <Button onClick={() => void openFile(`/deliveries/${created.id}/pdf`)}>Comprovante PDF</Button>

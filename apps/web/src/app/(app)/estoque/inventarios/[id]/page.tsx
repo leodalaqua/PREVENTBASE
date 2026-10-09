@@ -80,7 +80,7 @@ export default function CountPage({ params }: { params: Promise<{ id: string }> 
           rowKey={(i) => i.id}
           empty={c.status === "OPEN" ? "Inicie o inventário para gerar a lista de contagem." : "Sem itens."}
           columns={[
-            { key: "p", label: "EPI", render: (i) => <>{i.productDescription}<p className="text-xs text-slate-500">{i.sku}</p></> },
+            { key: "p", label: "EPI", render: (i) => <>{i.productDescription}<p className="text-xs text-zinc-500">{i.sku}</p></> },
             { key: "l", label: "Lote", render: (i) => i.lotNumber },
             { key: "loc", label: "Local", render: (i) => i.locationCode },
             { key: "s", label: "Sistema", render: (i) => (blind ? "•••" : i.systemQty) },

@@ -54,7 +54,7 @@ export default function DeliveryPage({ params }: { params: Promise<{ id: string 
         actions={
           <>
             <Button onClick={() => void openFile(`/deliveries/${id}/pdf`)}>Comprovante PDF</Button>
-            <Link href={`/verificar/${d.publicId}`} target="_blank" className="inline-flex min-h-10 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm">Verificação pública</Link>
+            <Link href={`/verificar/${d.publicId}`} target="_blank" className="inline-flex min-h-10 items-center rounded-lg border border-zinc-300 bg-white px-4 text-sm">Verificação pública</Link>
             {can("epi.cancel_delivery") && d.status === "ACTIVE" && <Button variant="danger" onClick={() => setCancelling(true)}>Cancelar</Button>}
           </>
         }
@@ -67,24 +67,24 @@ export default function DeliveryPage({ params }: { params: Promise<{ id: string 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card title="Dados" className="lg:col-span-1">
           <dl className="space-y-2 text-sm">
-            <div><dt className="text-xs text-slate-500">Colaborador</dt><dd><Link className="text-teal-700" href={`/colaboradores/${d.employee.id}`}>{d.employee.name}</Link> · {maskCpf(d.employee.cpf)}</dd></div>
-            <div><dt className="text-xs text-slate-500">Empresa</dt><dd>{companyName(d.company)}</dd></div>
-            <div><dt className="text-xs text-slate-500">Responsável</dt><dd>{d.manager?.name ?? "—"}</dd></div>
-            <div><dt className="text-xs text-slate-500">Almoxarifado</dt><dd>{d.warehouse?.name ?? "—"}</dd></div>
+            <div><dt className="text-xs text-zinc-500">Colaborador</dt><dd><Link className="font-medium text-brand-800 hover:underline" href={`/colaboradores/${d.employee.id}`}>{d.employee.name}</Link> · {maskCpf(d.employee.cpf)}</dd></div>
+            <div><dt className="text-xs text-zinc-500">Empresa</dt><dd>{companyName(d.company)}</dd></div>
+            <div><dt className="text-xs text-zinc-500">Responsável</dt><dd>{d.manager?.name ?? "—"}</dd></div>
+            <div><dt className="text-xs text-zinc-500">Almoxarifado</dt><dd>{d.warehouse?.name ?? "—"}</dd></div>
           </dl>
         </Card>
         <Card title="Evidência" className="lg:col-span-2">
           {d.evidence ? (
             <dl className="grid gap-2 text-sm sm:grid-cols-2">
-              <div><dt className="text-xs text-slate-500">Integridade</dt><dd>{d.hashValid ? <Badge color="green">hash confere</Badge> : <Badge color="red">hash NÃO confere</Badge>}</dd></div>
-              <div><dt className="text-xs text-slate-500">Método</dt><dd>Biometria facial 1:1 + prova de vida ({d.evidence.livenessChallenge})</dd></div>
-              <div><dt className="text-xs text-slate-500">Similaridade</dt><dd>{d.evidence.biometricScore?.toFixed(3) ?? "—"}</dd></div>
-              <div><dt className="text-xs text-slate-500">Termo</dt><dd>versão {d.evidence.termsVersion}</dd></div>
-              <div><dt className="text-xs text-slate-500">IP</dt><dd>{d.evidence.ipAddress ?? "—"}</dd></div>
-              <div className="sm:col-span-2"><dt className="text-xs text-slate-500">SHA-256</dt><dd className="break-all font-mono text-xs">{d.evidence.hash}</dd></div>
+              <div><dt className="text-xs text-zinc-500">Integridade</dt><dd>{d.hashValid ? <Badge color="green">hash confere</Badge> : <Badge color="red">hash NÃO confere</Badge>}</dd></div>
+              <div><dt className="text-xs text-zinc-500">Método</dt><dd>Biometria facial 1:1 + prova de vida ({d.evidence.livenessChallenge})</dd></div>
+              <div><dt className="text-xs text-zinc-500">Similaridade</dt><dd>{d.evidence.biometricScore?.toFixed(3) ?? "—"}</dd></div>
+              <div><dt className="text-xs text-zinc-500">Termo</dt><dd>versão {d.evidence.termsVersion}</dd></div>
+              <div><dt className="text-xs text-zinc-500">IP</dt><dd>{d.evidence.ipAddress ?? "—"}</dd></div>
+              <div className="sm:col-span-2"><dt className="text-xs text-zinc-500">SHA-256</dt><dd className="break-all font-mono text-xs">{d.evidence.hash}</dd></div>
             </dl>
           ) : (
-            <p className="text-sm text-slate-500">Sem evidência.</p>
+            <p className="text-sm text-zinc-500">Sem evidência.</p>
           )}
         </Card>
       </div>
@@ -97,14 +97,14 @@ export default function DeliveryPage({ params }: { params: Promise<{ id: string 
             { key: "q", label: "Qtd", render: (i) => i.quantity },
             { key: "ca", label: "CA", render: (i) => <>{i.caNumber} {i.caValidAtPurchase === false && <Badge color="red">vencido na compra</Badge>}</> },
             { key: "l", label: "Lote / validade", render: (i) => `${i.lotNumber} · ${fmtDate(i.lotExpiryDate)}` },
-            { key: "m", label: "Motivo", render: (i) => <>{i.reasonCode}{i.isEarlyReplacement && <Badge color="amber">antecipada</Badge>}{i.justification && <p className="text-xs text-slate-500">{i.justification}</p>}</> },
+            { key: "m", label: "Motivo", render: (i) => <>{i.reasonCode}{i.isEarlyReplacement && <Badge color="amber">antecipada</Badge>}{i.justification && <p className="text-xs text-zinc-500">{i.justification}</p>}</> },
             { key: "n", label: "Próx. troca", render: (i) => fmtDate(i.nextReplacementDue) },
           ]}
         />
       </Card>
       <Modal open={cancelling} title="Cancelar entrega" onClose={() => setCancelling(false)}>
         <div className="space-y-3">
-          <p className="text-sm text-slate-600">O registro original não é apagado: a entrega fica marcada como cancelada, o estoque é estornado por movimento e a ação é auditada.</p>
+          <p className="text-sm text-zinc-600">O registro original não é apagado: a entrega fica marcada como cancelada, o estoque é estornado por movimento e a ação é auditada.</p>
           <Field label="Motivo do cancelamento">
             <Textarea value={reason} onChange={(e) => setReason(e.target.value)} />
           </Field>

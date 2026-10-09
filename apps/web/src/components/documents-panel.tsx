@@ -61,7 +61,7 @@ export function DocumentsPanel({ entityType, entityId }: { entityType: string; e
     },
   });
 
-  if (!can("documents.view")) return <p className="text-sm text-slate-500">Sem permissão para documentos.</p>;
+  if (!can("documents.view")) return <p className="text-sm text-zinc-500">Sem permissão para documentos.</p>;
 
   return (
     <div className="space-y-4">
@@ -71,7 +71,7 @@ export function DocumentsPanel({ entityType, entityId }: { entityType: string; e
             e.preventDefault();
             upload.mutate();
           }}
-          className="grid gap-2 rounded-lg border border-dashed border-slate-300 p-3 sm:grid-cols-4"
+          className="grid gap-2 rounded-lg border border-dashed border-zinc-300 p-3 sm:grid-cols-4"
         >
           <Field label="Arquivo" className="sm:col-span-2">
             <input ref={file} type="file" required className="block w-full text-sm" accept=".pdf,.png,.jpg,.jpeg,.webp,.docx,.xlsx,.csv,.txt,.zip,.xml,.mp4" />

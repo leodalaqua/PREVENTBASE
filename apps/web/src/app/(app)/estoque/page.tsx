@@ -63,7 +63,7 @@ function EntryForm({ onDone }: { onDone: () => void }) {
   if (!picked) return <EpiPicker onPick={(p) => { setPicked(p); setF((s) => ({ ...s, caNumber: p.product.cas[0]?.caNumber ?? "" })); }} />;
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <p className="text-sm font-medium sm:col-span-2">{picked.product.description} — {variantLabel(picked.variant)} <button className="text-xs text-slate-500 underline" onClick={() => setPicked(null)}>trocar</button></p>
+      <p className="text-sm font-medium sm:col-span-2">{picked.product.description} — {variantLabel(picked.variant)} <button className="text-xs text-zinc-500 underline" onClick={() => setPicked(null)}>trocar</button></p>
       <Field label="Almoxarifado"><WarehouseSelect value={f.warehouseId} onChange={(v) => setF({ ...f, warehouseId: v })} /></Field>
       <Field label="Quantidade"><Input type="number" min={1} value={f.quantity} onChange={(e) => setF({ ...f, quantity: Number(e.target.value) })} /></Field>
       <Field label="Lote"><Input value={f.lotNumber} onChange={(e) => setF({ ...f, lotNumber: e.target.value })} /></Field>
@@ -179,8 +179,8 @@ function StockContent() {
             rowKey={(b) => b.id}
             empty="Sem saldo."
             columns={[
-              { key: "p", label: "EPI", render: (b) => <><span className="font-medium">{b.lot.variant.product.description}</span><p className="text-xs text-slate-500">{b.lot.variant.sku}</p></> },
-              { key: "l", label: "Lote", render: (b) => <>{b.lot.lotNumber}<p className="font-mono text-xs text-slate-400">{b.lot.publicCode}</p></> },
+              { key: "p", label: "EPI", render: (b) => <><span className="font-medium">{b.lot.variant.product.description}</span><p className="text-xs text-zinc-500">{b.lot.variant.sku}</p></> },
+              { key: "l", label: "Lote", render: (b) => <>{b.lot.lotNumber}<p className="font-mono text-xs text-zinc-400">{b.lot.publicCode}</p></> },
               { key: "ca", label: "CA", render: (b) => <>{b.lot.caNumber} {caBadge(b.lot.caValidAtPurchase)}</> },
               { key: "v", label: "Validade", render: (b) => <span className={b.lot.expiryDate && new Date(b.lot.expiryDate) < new Date() ? "font-medium text-red-700" : ""}>{fmtDate(b.lot.expiryDate)}</span> },
               { key: "w", label: "Local", render: (b) => `${b.warehouse.code}/${b.location.code}` },
@@ -244,7 +244,7 @@ function StockContent() {
 
       {tab === "minimos" && (
         <Card title="Mínimo / máximo por almoxarifado" actions={can("inventory.adjust") && warehouseId && <Button onClick={() => setLevelOpen(true)}>＋ Definir</Button>}>
-          {!warehouseId && <p className="mb-2 text-sm text-slate-500">Selecione um almoxarifado para definir níveis.</p>}
+          {!warehouseId && <p className="mb-2 text-sm text-zinc-500">Selecione um almoxarifado para definir níveis.</p>}
           <Table rows={levels} rowKey={(l) => l.id} empty="Nenhum nível definido." columns={[{ key: "p", label: "EPI", render: (l) => l.variant.product.description }, { key: "s", label: "SKU", render: (l) => l.variant.sku }, { key: "mi", label: "Mínimo", render: (l) => l.minQty }, { key: "ma", label: "Máximo", render: (l) => l.maxQty ?? "—" }]} />
         </Card>
       )}
