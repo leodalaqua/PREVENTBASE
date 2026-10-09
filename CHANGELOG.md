@@ -3,6 +3,16 @@
 Formato `AA.MM.DD.N`: data do commit + sequência daquele dia. Gerado a partir dos commits por
 `C:\ROBBY\scripts\versioning\release.mjs` — não editar à mão (ajuste a mensagem do commit).
 
+## 26.10.09.2 — 2026-10-09
+
+### Novidades
+
+- **web:** PWA com marca PreventBase (icones, offline, atalhos) e telas responsivas ([31b3ebd](https://github.com/leodalaqua/PREVENTBASE/commit/31b3ebd8893eac6f3186083dd36162fb8107ebb9))
+
+### Documentação
+
+- **modulos:** documentacao por modulo da fase 1 (EPI no ar) e SUMMARY atualizado ([b7e88c3](https://github.com/leodalaqua/PREVENTBASE/commit/b7e88c3fc4693b8f0fd60cbbbc3785f33bdb5e74))
+
 ## 26.10.09.1 — 2026-10-09
 
 ### Novidades

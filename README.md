@@ -1,7 +1,7 @@
 # PreventBase
 
 <!-- versao:inicio -->
-**Versão atual:** `26.10.09.1` (2026-10-09) · [histórico de versões](CHANGELOG.md)
+**Versão atual:** `26.10.09.2` (2026-10-09) · [histórico de versões](CHANGELOG.md)
 <!-- versao:fim -->
 
 Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER-PLAN.md](docs/MASTER-PLAN.md) · Índice: [docs/SUMMARY.md](docs/SUMMARY.md).
@@ -9,7 +9,17 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 <!-- atualizacoes:inicio -->
 ## Atualizações
 
-Últimas 3 versões compiladas dos commits. Histórico completo em [CHANGELOG.md](CHANGELOG.md).
+Últimas 4 versões compiladas dos commits. Histórico completo em [CHANGELOG.md](CHANGELOG.md).
+
+### 26.10.09.2 — 2026-10-09
+
+**Novidades**
+
+- **web:** PWA com marca PreventBase (icones, offline, atalhos) e telas responsivas ([31b3ebd](https://github.com/leodalaqua/PREVENTBASE/commit/31b3ebd8893eac6f3186083dd36162fb8107ebb9))
+
+**Documentação**
+
+- **modulos:** documentacao por modulo da fase 1 (EPI no ar) e SUMMARY atualizado ([b7e88c3](https://github.com/leodalaqua/PREVENTBASE/commit/b7e88c3fc4693b8f0fd60cbbbc3785f33bdb5e74))
 
 ### 26.10.09.1 — 2026-10-09
 
