@@ -55,3 +55,7 @@ Robby: catálogo de portas/acessos (`C:\ROBBY\config\ports.json`, `magicdns.json
 ## Portas
 
 App (nginx) `:3100` · API `:3101` (nginx só `/api/`) · Postgres `:3110` · MinIO `127.0.0.1:3112/:3113`. Redis, worker e biometric só na rede interna. Fonte: `C:\ROBBY\config\ports.json` (id 31); mudar porta → regra `40-hub-ports`.
+
+## IA / LLM
+
+Gemini revogado (2026-10-10); OCR por IA desligado. Sem IA paga: se precisar de IA (comunicação, texto), usar **só LLM gratuita via OpenRouter** (`openrouter/free` ou modelos `:free`, chave `OPENROUTER_API_KEY` no `.env`). Fonte: [decisão](file:///C:/ROBBY/docs/decisions/2026-10-10-ia-openrouter-free.md).

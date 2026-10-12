@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "codebase-memory": {
+      "command": "C:\\cbm\\codebase-memory-mcp.exe",
+      "args": [],
+      "env": {
+        "CBM_RUNTIME_DIR": "C:\\cbm\\runtime",
+        "CBM_CACHE_DIR": "C:\\cbm\\cache"
+      }
+    }
+  }
+}

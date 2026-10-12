@@ -1,0 +1,15 @@
+---
+description: Idioma padrão pt-BR para respostas de agentes e subagentes — padrão do ecossistema
+alwaysApply: true
+---
+
+# Idioma: sempre português do Brasil (pt-BR)
+
+Vale para todo repo do ecossistema (mapa em `C:\ROBBY\docs\SUMMARY.md`).
+
+- **Toda** resposta ao usuário em **pt-BR**, mesmo que a pergunta, o código, os logs ou a doc estejam em outro idioma.
+- Inclui: mensagens de progresso, resumos finais (ALTERADO/VALIDADO/PENDENTE), perguntas (`AskQuestion`), planos, revisões de código e relatórios.
+- **Subagentes / agentes criados** (Task, best-of-n, automações Cursor, Cursor SDK, cloud agents, prompts de agentes em scripts): incluir no prompt a instrução explícita `Responda sempre em português do Brasil (pt-BR).` e exigir que o retorno venha em pt-BR.
+- Resposta recebida de subagente em outro idioma → repassar ao usuário traduzida para pt-BR.
+- Mensagens de commit, comentários e docs novos: pt-BR (padrão já usado nos repos).
+- **Não traduzir**: código, identificadores, comandos, paths, nomes de APIs/bibliotecas, mensagens de erro e logs citados literalmente.

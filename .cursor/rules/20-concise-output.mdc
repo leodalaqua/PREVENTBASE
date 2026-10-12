@@ -1,13 +1,9 @@
 ---
-description: Token Saver + saída compacta — padrão do ecossistema
+description: Saída compacta — padrão do ecossistema
 alwaysApply: true
 ---
 
-# Token Saver e saída compacta (padrão)
-
-Proxy **padrão** Cursor: `http://127.0.0.1:2402/v1`  
-Canônico: `C:\ROBBY\docs\robby\token-saver.md` · Código: `C:\MATRIZ\Cursor-Token-Saver-and-Optimizer`  
-Sobe com `C:\ROBBY\scripts\start-all-services.ps1`. Override Base URL no Cursor = proxy acima.
+# Saída compacta (padrão)
 
 **Não** alterar código, patches, comandos, logs necessários, erros ou artefatos por concisão.
 

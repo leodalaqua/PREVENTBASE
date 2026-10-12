@@ -1,0 +1,22 @@
+# Runtime e dados
+backups/
+tmp/
+*.log
+*.tmp
+
+# Dependências e builds
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.venv/
+__pycache__/
+
+# IDE e segredos
+.cursor/
+*.pem
+*.pfx
+*.p12
+*.key
+.env*

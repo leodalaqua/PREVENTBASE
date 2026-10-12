@@ -29,6 +29,23 @@ Máximo para orientar-se: SUMMARY deste repo + MD do módulo + (se cruzado) SUMM
 
 Grep/Search no código só é aceitável **depois** do roteamento, e **apenas** dentro dos paths já apontados pelo SUMMARY/módulo.
 
+## Grafo de Código e Economia de Tokens (Codebase Memory MCP)
+
+O servidor MCP `codebase-memory` (`C:\cbm\codebase-memory-mcp.exe`) está ativo em todos os repositórios com o grafo estrutural pré-indexado em SQLite local (`C:\cbm\cache`):
+
+1. **Priorize ferramentas do grafo em vez de Grep ou Read extensivo:**
+   - `search_graph`: busca de nós por nome, label (`Function`, `Class`, `Route`, `Interface`), BM25 e semântica vetorial local. Consome ~120x menos tokens que varreduras por texto.
+   - `trace_path`: BFS de chamadas (inbound/outbound, profundidade 1-5). Mapeia quem chama quem sem abrir múltiplos arquivos.
+   - `get_code_snippet`: recupera apenas a função ou método exato por nome qualificado, evitando ler arquivos inteiros de centenas de linhas.
+   - `get_file_outline`: esqueleto das declarações de um arquivo em ordem linear antes de decidir o que ler.
+   - `get_architecture`: visão consolidada de clusters Louvain, rotas HTTP e dependências do repositório.
+   - `detect_changes`: mapeia git diff contra o grafo e calcula o raio de impacto (blast radius) de alterações antes de commitar.
+   - `query_graph`: consultas openCypher no grafo local para análises estruturais precisas.
+
+2. **Operações Transversais (Cross-Repo):**
+   - Os 11 repositórios do ecossistema estão interligados via arestas `CROSS_HTTP_CALLS` no mesmo storage.
+   - Para entender a comunicação entre módulos de repositórios diferentes (ex: Robby ↔ PID ↔ ERP Seven / FastPixi / Matriz / GEDSpot), consulte o grafo do projeto alvo usando `search_graph(project=...)` ou `query_graph` em vez de carregar código e contexto do outro repositório na conversa.
+
 ## Após a tarefa
 
 - Atualizar **somente** documentação impactada neste repo (módulo / SUMMARY se novo módulo).
