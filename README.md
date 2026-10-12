@@ -1,7 +1,7 @@
 # PreventBase
 
 <!-- versao:inicio -->
-**Versão atual:** `26.10.12.2` (2026-10-12) · [histórico de versões](CHANGELOG.md)
+**Versão atual:** `26.10.12.3` (2026-10-12) · [histórico de versões](CHANGELOG.md)
 <!-- versao:fim -->
 
 Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER-PLAN.md](docs/MASTER-PLAN.md) · Índice: [docs/SUMMARY.md](docs/SUMMARY.md).
@@ -10,6 +10,12 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 ## Atualizações
 
 Últimas 5 versões compiladas dos commits. Histórico completo em [CHANGELOG.md](CHANGELOG.md).
+
+### 26.10.12.3 — 2026-10-12
+
+**Novidades**
+
+- **identidade:** login único cria acesso pendente e aceita 2FA da central ([dcffe40](https://github.com/leodalaqua/PREVENTBASE/commit/dcffe405f5bee9c20afecf249f0f99050f526741))
 
 ### 26.10.12.2 — 2026-10-12
 
@@ -43,19 +49,5 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 **Documentação**
 
 - **modulos:** documentacao por modulo da fase 1 (EPI no ar) e SUMMARY atualizado ([b7e88c3](https://github.com/leodalaqua/PREVENTBASE/commit/b7e88c3fc4693b8f0fd60cbbbc3785f33bdb5e74))
-
-### 26.10.09.1 — 2026-10-09
-
-**Novidades**
-
-- **identidade:** login por biometria (passkey/WebAuthn) com access+refresh e sem TOTP ([9c77af4](https://github.com/leodalaqua/PREVENTBASE/commit/9c77af4c57c86066ee7b325bbfe922653a1af0f0))
-
-**Correções**
-
-- **auth:** passkey no iPhone/portal com options pré-buscadas (kit Robby) ([e33e6e1](https://github.com/leodalaqua/PREVENTBASE/commit/e33e6e1ec8e766ca01651f4a6d1edf53ed3bb6ed))
-
-**Documentação**
-
-- **regras:** publicar com versionamento AA.MM.DD.N (release.mjs do Robby) ([ed5c27b](https://github.com/leodalaqua/PREVENTBASE/commit/ed5c27b72ed70e626287c3a276bc6bc24de89701))
 
 <!-- atualizacoes:fim -->

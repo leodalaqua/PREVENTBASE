@@ -3,6 +3,12 @@
 Formato `AA.MM.DD.N`: data do commit + sequência daquele dia. Gerado a partir dos commits por
 `C:\ROBBY\scripts\versioning\release.mjs` — não editar à mão (ajuste a mensagem do commit).
 
+## 26.10.12.3 — 2026-10-12
+
+### Novidades
+
+- **identidade:** login único cria acesso pendente e aceita 2FA da central ([dcffe40](https://github.com/leodalaqua/PREVENTBASE/commit/dcffe405f5bee9c20afecf249f0f99050f526741))
+
 ## 26.10.12.2 — 2026-10-12
 
 ### Novidades
