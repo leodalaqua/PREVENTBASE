@@ -1,7 +1,7 @@
 # PreventBase
 
 <!-- versao:inicio -->
-**Versão atual:** `26.10.09.2` (2026-10-09) · [histórico de versões](CHANGELOG.md)
+**Versão atual:** `26.10.11.1` (2026-10-11) · [histórico de versões](CHANGELOG.md)
 <!-- versao:fim -->
 
 Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER-PLAN.md](docs/MASTER-PLAN.md) · Índice: [docs/SUMMARY.md](docs/SUMMARY.md).
@@ -9,7 +9,17 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 <!-- atualizacoes:inicio -->
 ## Atualizações
 
-Últimas 4 versões compiladas dos commits. Histórico completo em [CHANGELOG.md](CHANGELOG.md).
+Últimas 5 versões compiladas dos commits. Histórico completo em [CHANGELOG.md](CHANGELOG.md).
+
+### 26.10.11.1 — 2026-10-11
+
+**Novidades**
+
+- **auth:** login único Veritech ([06df334](https://github.com/leodalaqua/PREVENTBASE/commit/06df334cd26b515b42fa4959006f33f980cfa2c1))
+
+**Manutenção**
+
+- **cursor:** regras pt-BR, grafo de código (MCP) e IA só gratuita ([766b226](https://github.com/leodalaqua/PREVENTBASE/commit/766b226573a8e6d0077ca28c5f429d5b22fcd143))
 
 ### 26.10.09.2 — 2026-10-09
 

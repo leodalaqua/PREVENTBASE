@@ -3,6 +3,16 @@
 Formato `AA.MM.DD.N`: data do commit + sequência daquele dia. Gerado a partir dos commits por
 `C:\ROBBY\scripts\versioning\release.mjs` — não editar à mão (ajuste a mensagem do commit).
 
+## 26.10.11.1 — 2026-10-11
+
+### Novidades
+
+- **auth:** login único Veritech ([06df334](https://github.com/leodalaqua/PREVENTBASE/commit/06df334cd26b515b42fa4959006f33f980cfa2c1))
+
+### Manutenção
+
+- **cursor:** regras pt-BR, grafo de código (MCP) e IA só gratuita ([766b226](https://github.com/leodalaqua/PREVENTBASE/commit/766b226573a8e6d0077ca28c5f429d5b22fcd143))
+
 ## 26.10.09.2 — 2026-10-09
 
 ### Novidades
