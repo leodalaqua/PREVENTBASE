@@ -7,6 +7,7 @@ import { AuthGuard, hashDeviceKey, RequirePermissions } from "../../core/auth.gu
 import { authed, DomainError, notFound } from "../../core/context.js";
 import { zod } from "../../core/http.js";
 import { PrismaService } from "../../core/prisma.service.js";
+import { assertSelfUpdateAllowed } from "./user-rules.js";
 
 const userSelect = {
   id: true,
@@ -53,21 +54,25 @@ export class UsersController {
   }
 
   private async resolveRoles(tenantId: string, roles: Array<{ roleKey: string; companyId?: string | null; establishmentId?: string | null }>) {
-    const found = await this.prisma.role.findMany({ where: { key: { in: roles.map((r) => r.roleKey) }, OR: [{ tenantId: null }, { tenantId }] } });
+    const found = await this.prisma.role.findMany({
+      where: { key: { in: roles.map((r) => r.roleKey) }, OR: [{ tenantId: null }, { tenantId }] },
+      include: { permissions: { select: { permission: { select: { key: true } } } } },
+    });
     const actor = authed();
-    return roles.map((r) => {
+    const resolved = roles.map((r) => {
       const role = found.find((f) => f.key === r.roleKey);
       if (!role) throw new DomainError(400, "ROLE_INVALID", `Perfil inválido: ${r.roleKey}`);
       if (role.key === "super_admin" && !actor.permissions.has("tenant.manage")) throw new DomainError(403, "FORBIDDEN", "Somente Super Admin concede Super Admin");
-      return { roleId: role.id, companyId: r.companyId ?? null, establishmentId: r.establishmentId ?? null };
+      return { row: { roleId: role.id, companyId: r.companyId ?? null, establishmentId: r.establishmentId ?? null }, permissions: role.permissions.map((p) => p.permission.key) };
     });
+    return { rows: resolved.map((r) => r.row), permissions: resolved.map((r) => r.permissions) };
   }
 
   @Post("users")
   @RequirePermissions("users.manage")
   async create(@Body(zod(userCreateSchema)) body: z.infer<typeof userCreateSchema>) {
     const { tenantId } = authed();
-    const roles = await this.resolveRoles(tenantId, body.roles);
+    const { rows: roles } = await this.resolveRoles(tenantId, body.roles);
     return this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
         data: { tenantId, name: body.name, email: body.email, employeeId: body.employeeId ?? null, passwordHash: await bcrypt.hash(body.password, 12), roles: { create: roles } },
@@ -81,10 +86,12 @@ export class UsersController {
   @Patch("users/:id")
   @RequirePermissions("users.manage")
   async update(@Param("id") id: string, @Body(zod(userUpdateSchema)) body: z.infer<typeof userUpdateSchema>) {
-    const { tenantId } = authed();
+    const { tenantId, userId } = authed();
     const before = await this.prisma.user.findFirst({ where: { id, tenantId }, select: userSelect });
     if (!before) throw notFound("Usuário");
-    const roles = body.roles ? await this.resolveRoles(tenantId, body.roles) : undefined;
+    const resolved = body.roles ? await this.resolveRoles(tenantId, body.roles) : undefined;
+    assertSelfUpdateAllowed({ actorId: userId, targetId: id, status: body.status, rolePermissions: resolved?.permissions });
+    const roles = resolved?.rows;
     const result = await this.prisma.$transaction(async (tx) => {
       if (roles) {
         await tx.userRole.deleteMany({ where: { userId: id } });

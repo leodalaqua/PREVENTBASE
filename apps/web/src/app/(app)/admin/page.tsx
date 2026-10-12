@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { CompanySelect, EpiPicker, type PickedVariant } from "@/components/pickers";
 import { IconPlus } from "@/components/icons";
-import { Badge, Button, Card, ErrorBox, Field, Input, Modal, PageHeader, Select, StatusBadge, Table, Tabs, Textarea, useToast } from "@/components/ui";
+import { Badge, Button, Card, cx, Empty, ErrorBox, Field, Input, Modal, Notice, PageHeader, Select, StatusBadge, Table, Tabs, Textarea, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDateTime, maskCnpj } from "@/lib/format";
@@ -181,32 +181,164 @@ function Warehouses() {
   );
 }
 
-interface UserRow { id: string; name: string; email: string; status: string; mfaEnabled: boolean; lastLoginAt: string | null; roles: Array<{ companyId: string | null; role: { key: string; name: string } }> }
-interface Role { id: string; key: string; name: string }
+interface UserRow { id: string; name: string; email: string; status: string; mfaEnabled: boolean; lastLoginAt: string | null; createdAt: string; roles: Array<{ companyId: string | null; establishmentId: string | null; role: { key: string; name: string } }> }
+interface Role { id: string; key: string; name: string; permissions: Array<{ permission: { key: string } }> }
+interface Assignment { roleKey: string; companyId: string; establishmentId: string | null }
+type UserFilter = "all" | "pending" | "active" | "blocked";
+
+const isPending = (u: UserRow) => u.status === "BLOCKED" && u.roles.length === 0;
+const grantsUsersManage = (r: Role | undefined) => !!r?.permissions.some((p) => p.permission.key === "users.manage");
+
+function UserStatus({ u }: { u: UserRow }) {
+  return isPending(u) ? <Badge color="amber">Aguardando liberação</Badge> : <StatusBadge status={u.status} />;
+}
+
+function RoleEditor({ user, roles, onClose }: { user: UserRow; roles: Role[]; onClose: () => void }) {
+  const { me, can } = useAuth();
+  const self = me?.id === user.id;
+  const [rows, setRows] = useState<Assignment[]>(() =>
+    user.roles.length ? user.roles.map((r) => ({ roleKey: r.role.key, companyId: r.companyId ?? "", establishmentId: r.establishmentId })) : [{ roleKey: "", companyId: "", establishmentId: null }],
+  );
+  const options = roles.filter((r) => r.key !== "super_admin" || can("tenant.manage") || rows.some((a) => a.roleKey === "super_admin"));
+  const byKey = (k: string) => roles.find((r) => r.key === k);
+  const filled = rows.filter((a) => a.roleKey);
+  const duplicated = new Set(filled.map((a) => `${a.roleKey}|${a.companyId}`)).size !== filled.length;
+  const losesAdmin = self && !filled.some((a) => grantsUsersManage(byKey(a.roleKey)));
+  const blocked = filled.length === 0 || filled.length !== rows.length || duplicated || losesAdmin;
+  const payload = () => filled.map((a) => ({ roleKey: a.roleKey, companyId: a.companyId || null, establishmentId: a.establishmentId }));
+  const release = useSave(() => api.patch(`/users/${user.id}`, { roles: payload(), status: "ACTIVE" }), [["users"]], "Acesso liberado", onClose);
+  const save = useSave(() => api.patch(`/users/${user.id}`, { roles: payload() }), [["users"]], "Perfis atualizados", onClose);
+  const set = (i: number, patch: Partial<Assignment>) => setRows(rows.map((a, j) => (j === i ? { ...a, ...patch } : a)));
+  const busy = release.isPending || save.isPending;
+
+  return (
+    <div className="space-y-4">
+      <div className="text-sm">
+        <p className="break-any font-medium text-zinc-900">{user.name}</p>
+        <p className="break-any text-zinc-600">{user.email}</p>
+        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
+          <UserStatus u={user} />
+          <span>criado em {fmtDateTime(user.createdAt)}</span>
+        </div>
+      </div>
+      <ul className="space-y-3">
+        {rows.map((a, i) => (
+          <li key={i} className="grid gap-2 rounded-lg border border-zinc-200 p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end sm:border-0 sm:p-0">
+            <Field label="Perfil">
+              <Select value={a.roleKey} onChange={(e) => set(i, { roleKey: e.target.value })}>
+                <option value="" disabled>Selecione o perfil</option>
+                {options.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
+              </Select>
+            </Field>
+            <Field label="Escopo (empresa)">
+              <CompanySelect allowAll value={a.companyId} onChange={(v) => set(i, { companyId: v, establishmentId: null })} />
+            </Field>
+            <Button variant="ghost" disabled={rows.length === 1} onClick={() => setRows(rows.filter((_, j) => j !== i))}>Remover</Button>
+          </li>
+        ))}
+      </ul>
+      <Button variant="secondary" onClick={() => setRows([...rows, { roleKey: "", companyId: "", establishmentId: null }])}><IconPlus size={18} />Adicionar perfil</Button>
+      <p className="text-xs text-zinc-500">"Todas as empresas" vale para todas as empresas do tenant. Perfil com empresa limita o acesso aos dados dela.</p>
+      {duplicated && <Notice tone="warn">Perfil repetido com o mesmo escopo.</Notice>}
+      {losesAdmin && <Notice tone="warn">Você não pode remover o próprio perfil de administrador.</Notice>}
+      <ErrorBox error={release.error ?? save.error} />
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button variant="secondary" onClick={onClose}>Cancelar</Button>
+        {user.status === "ACTIVE" ? (
+          <Button loading={save.isPending} disabled={blocked || busy} onClick={() => save.mutate(undefined)}>Salvar perfis</Button>
+        ) : (
+          <>
+            {user.roles.length > 0 && <Button variant="secondary" loading={save.isPending} disabled={blocked || busy} onClick={() => save.mutate(undefined)}>Salvar sem liberar</Button>}
+            <Button loading={release.isPending} disabled={blocked || busy} onClick={() => release.mutate(undefined)}>Liberar acesso</Button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
 
 function Users() {
-  const { can } = useAuth();
+  const { can, me } = useAuth();
+  const manage = can("users.manage");
   const { data } = useQuery({ queryKey: ["users"], queryFn: () => api.get<UserRow[]>("/users?pageSize=500") });
   const { data: roles } = useQuery({ queryKey: ["roles"], queryFn: () => api.get<Role[]>("/roles") });
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<UserRow | null>(null);
+  const [filter, setFilter] = useState<UserFilter>("all");
   const [f, setF] = useState({ name: "", email: "", password: "", roleKey: "", companyId: "" });
   const create = useSave(() => api.post("/users", { name: f.name, email: f.email, password: f.password, roles: [{ roleKey: f.roleKey, companyId: f.companyId || null }] }), [["users"]], "Usuário criado", () => setOpen(false));
   const toggle = useSave((u: UserRow) => api.patch(`/users/${u.id}`, { status: u.status === "ACTIVE" ? "BLOCKED" : "ACTIVE" }), [["users"]], "Usuário atualizado");
+  const pending = data?.filter(isPending) ?? [];
+  const match: Record<UserFilter, (u: UserRow) => boolean> = { all: () => true, pending: isPending, active: (u) => u.status === "ACTIVE", blocked: (u) => u.status === "BLOCKED" };
+  const rows = data?.filter(match[filter]);
+  const filters: Array<{ id: UserFilter; label: string }> = [
+    { id: "all", label: `Todos${data ? ` (${data.length})` : ""}` },
+    { id: "pending", label: `Aguardando liberação (${pending.length})` },
+    { id: "active", label: "Ativos" },
+    { id: "blocked", label: "Bloqueados" },
+  ];
+  const actions = (u: UserRow) =>
+    manage && (
+      <div className="flex flex-wrap gap-1">
+        {isPending(u) ? (
+          <Button onClick={() => setEditing(u)}>Liberar acesso</Button>
+        ) : (
+          <Button variant="ghost" onClick={() => setEditing(u)}>Perfis</Button>
+        )}
+        {me?.id === u.id ? null : !isPending(u) && <Button variant="ghost" onClick={() => toggle.mutate(u)}>{u.status === "ACTIVE" ? "Bloquear" : "Reativar"}</Button>}
+      </div>
+    );
+
   return (
-    <Card title="Usuários" actions={can("users.manage") && <Button onClick={() => setOpen(true)}><IconPlus size={18} />Usuário</Button>}>
-      <Table
-        rows={data}
-        rowKey={(u) => u.id}
-        columns={[
-          { key: "n", label: "Nome", render: (u) => u.name },
-          { key: "e", label: "E-mail", render: (u) => u.email },
-          { key: "r", label: "Perfis", render: (u) => u.roles.map((r) => r.role.name).join(", ") },
-          { key: "m", label: "MFA", render: (u) => (u.mfaEnabled ? <Badge color="green">sim</Badge> : "não") },
-          { key: "l", label: "Último acesso", render: (u) => fmtDateTime(u.lastLoginAt) },
-          { key: "s", label: "Situação", render: (u) => <StatusBadge status={u.status} /> },
-          { key: "a", label: "", render: (u) => can("users.manage") && <Button variant="ghost" onClick={() => toggle.mutate(u)}>{u.status === "ACTIVE" ? "Bloquear" : "Reativar"}</Button> },
-        ]}
-      />
+    <Card title="Usuários" actions={manage && <Button onClick={() => setOpen(true)}><IconPlus size={18} />Usuário</Button>}>
+      {pending.length > 0 && filter !== "pending" && (
+        <div className="mb-3 flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 sm:flex-row sm:items-center sm:justify-between">
+          <Notice tone="warn">{pending.length === 1 ? "1 usuário entrou pelo login único e aguarda liberação." : `${pending.length} usuários entraram pelo login único e aguardam liberação.`}</Notice>
+          <Button variant="secondary" onClick={() => setFilter("pending")}>Ver pendentes</Button>
+        </div>
+      )}
+      <div className="mb-3 flex flex-wrap gap-2" role="group" aria-label="Filtrar usuários">
+        {filters.map((x) => (
+          <Button key={x.id} variant={filter === x.id ? "primary" : "secondary"} aria-pressed={filter === x.id} onClick={() => setFilter(x.id)}>{x.label}</Button>
+        ))}
+      </div>
+      <ErrorBox error={toggle.error} />
+      {!rows && <div className="space-y-2 sm:hidden" role="status" aria-busy="true"><span className="sr-only">Carregando…</span><div className="skeleton h-24" /><div className="skeleton h-24" /></div>}
+      {rows?.length === 0 && <div className="sm:hidden"><Empty>{filter === "pending" ? "Nenhum usuário aguardando liberação." : undefined}</Empty></div>}
+      <ul className="space-y-2 sm:hidden">
+        {rows?.map((u) => (
+          <li key={u.id} className={cx("rounded-lg border p-3", isPending(u) ? "border-amber-200 bg-amber-50/60" : "border-zinc-200")}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="break-any font-medium text-zinc-900">{u.name}</p>
+                <p className="break-any text-sm text-zinc-600">{u.email}</p>
+              </div>
+              <UserStatus u={u} />
+            </div>
+            <p className="mt-1 text-xs text-zinc-500">{u.roles.map((r) => r.role.name).join(", ") || "Sem perfil"} · último acesso {fmtDateTime(u.lastLoginAt)}</p>
+            <div className="mt-2">{actions(u)}</div>
+          </li>
+        ))}
+      </ul>
+      <div className="hidden sm:block">
+        <Table
+          rows={rows}
+          rowKey={(u) => u.id}
+          empty={filter === "pending" ? "Nenhum usuário aguardando liberação." : undefined}
+          columns={[
+            { key: "n", label: "Nome", render: (u) => u.name },
+            { key: "e", label: "E-mail", render: (u) => <span className="break-any">{u.email}</span> },
+            { key: "r", label: "Perfis", render: (u) => u.roles.map((r) => r.role.name).join(", ") || <span className="text-zinc-500">Sem perfil</span> },
+            { key: "m", label: "MFA", render: (u) => (u.mfaEnabled ? <Badge color="green">sim</Badge> : "não") },
+            { key: "l", label: "Último acesso", render: (u) => fmtDateTime(u.lastLoginAt) },
+            { key: "s", label: "Situação", render: (u) => <UserStatus u={u} /> },
+            { key: "a", label: "", render: actions },
+          ]}
+        />
+      </div>
+      <Modal open={!!editing} title={editing && isPending(editing) ? "Liberar acesso" : "Perfis do usuário"} onClose={() => setEditing(null)} wide>
+        {editing && roles && <RoleEditor key={editing.id} user={editing} roles={roles} onClose={() => setEditing(null)} />}
+      </Modal>
       <Modal open={open} title="Novo usuário" onClose={() => setOpen(false)}>
         <div className="space-y-3">
           <Field label="Nome"><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
