@@ -36,7 +36,10 @@ const S: Record<string, CSSProperties> = {
     borderRadius: 8, border: "1px solid currentColor", background: "transparent", color: "inherit", font: "inherit",
     fontSize: 14, fontWeight: 600, cursor: "pointer", width: "100%",
   },
-  primary: { background: "#1d4ed8", borderColor: "#1d4ed8", color: "#fff" },
+  primary: {
+    background: "var(--passkey-accent, #1d4ed8)", borderColor: "var(--passkey-accent, #1d4ed8)",
+    color: "var(--passkey-accent-ink, #fff)",
+  },
   danger: { width: "auto", minHeight: 32, fontSize: 12, background: "#b42318", borderColor: "#b42318", color: "#fff" },
   or: { display: "flex", alignItems: "center", gap: 10, fontSize: 12, opacity: 0.7, margin: 0 },
   line: { flex: 1, height: 1, background: "currentColor", opacity: 0.25 },
