@@ -3,6 +3,12 @@
 Formato `AA.MM.DD.N`: data do commit + sequência daquele dia. Gerado a partir dos commits por
 `C:\ROBBY\scripts\versioning\release.mjs` — não editar à mão (ajuste a mensagem do commit).
 
+## 26.10.12.5 — 2026-10-12
+
+### Desempenho
+
+- **docker:** healthchecks a cada 30s para aliviar a CPU do servidor ([0e7b6c6](https://github.com/leodalaqua/PREVENTBASE/commit/0e7b6c6b5cb21ec639a55c016985b39e326e250c))
+
 ## 26.10.12.4 — 2026-10-12
 
 ### Novidades

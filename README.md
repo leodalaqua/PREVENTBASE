@@ -1,7 +1,7 @@
 # PreventBase
 
 <!-- versao:inicio -->
-**Versão atual:** `26.10.12.4` (2026-10-12) · [histórico de versões](CHANGELOG.md)
+**Versão atual:** `26.10.12.5` (2026-10-12) · [histórico de versões](CHANGELOG.md)
 <!-- versao:fim -->
 
 Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER-PLAN.md](docs/MASTER-PLAN.md) · Índice: [docs/SUMMARY.md](docs/SUMMARY.md).
@@ -10,6 +10,12 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 ## Atualizações
 
 Últimas 5 versões compiladas dos commits. Histórico completo em [CHANGELOG.md](CHANGELOG.md).
+
+### 26.10.12.5 — 2026-10-12
+
+**Desempenho**
+
+- **docker:** healthchecks a cada 30s para aliviar a CPU do servidor ([0e7b6c6](https://github.com/leodalaqua/PREVENTBASE/commit/0e7b6c6b5cb21ec639a55c016985b39e326e250c))
 
 ### 26.10.12.4 — 2026-10-12
 
@@ -35,15 +41,5 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 
 - **web:** telas de entrega, biometria e listas mais legíveis em campo ([c9a5bbd](https://github.com/leodalaqua/PREVENTBASE/commit/c9a5bbd8ed79edb849bd0c95baa664f65fd18e78))
 - **web:** base de UI com ícones SVG, foco visível e alvos de toque ([59da36a](https://github.com/leodalaqua/PREVENTBASE/commit/59da36a3e99ecd21335a58ce576cad914eeb1bcd))
-
-### 26.10.11.1 — 2026-10-11
-
-**Novidades**
-
-- **auth:** login único Veritech ([06df334](https://github.com/leodalaqua/PREVENTBASE/commit/06df334cd26b515b42fa4959006f33f980cfa2c1))
-
-**Manutenção**
-
-- **cursor:** regras pt-BR, grafo de código (MCP) e IA só gratuita ([766b226](https://github.com/leodalaqua/PREVENTBASE/commit/766b226573a8e6d0077ca28c5f429d5b22fcd143))
 
 <!-- atualizacoes:fim -->
