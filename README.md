@@ -1,7 +1,7 @@
 # PreventBase
 
 <!-- versao:inicio -->
-**Versão atual:** `26.10.11.1` (2026-10-11) · [histórico de versões](CHANGELOG.md)
+**Versão atual:** `26.10.12.1` (2026-10-12) · [histórico de versões](CHANGELOG.md)
 <!-- versao:fim -->
 
 Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER-PLAN.md](docs/MASTER-PLAN.md) · Índice: [docs/SUMMARY.md](docs/SUMMARY.md).
@@ -10,6 +10,13 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 ## Atualizações
 
 Últimas 5 versões compiladas dos commits. Histórico completo em [CHANGELOG.md](CHANGELOG.md).
+
+### 26.10.12.1 — 2026-10-12
+
+**Novidades**
+
+- **web:** telas de entrega, biometria e listas mais legíveis em campo ([c9a5bbd](https://github.com/leodalaqua/PREVENTBASE/commit/c9a5bbd8ed79edb849bd0c95baa664f65fd18e78))
+- **web:** base de UI com ícones SVG, foco visível e alvos de toque ([59da36a](https://github.com/leodalaqua/PREVENTBASE/commit/59da36a3e99ecd21335a58ce576cad914eeb1bcd))
 
 ### 26.10.11.1 — 2026-10-11
 
@@ -50,11 +57,5 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 **Correções**
 
 - **caepi:** sincronizacao em streaming, validacao do ZIP e formato atual do MTE ([94b1039](https://github.com/leodalaqua/PREVENTBASE/commit/94b103902d46599dee2a704914b780963c9a32c4))
-
-### 26.10.07.1 — 2026-10-07
-
-**Manutenção**
-
-- commit inicial do repositorio ([0551f95](https://github.com/leodalaqua/PREVENTBASE/commit/0551f954a506c34afc004e07b24ac60fbe04f7dc))
 
 <!-- atualizacoes:fim -->

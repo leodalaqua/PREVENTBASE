@@ -3,6 +3,13 @@
 Formato `AA.MM.DD.N`: data do commit + sequência daquele dia. Gerado a partir dos commits por
 `C:\ROBBY\scripts\versioning\release.mjs` — não editar à mão (ajuste a mensagem do commit).
 
+## 26.10.12.1 — 2026-10-12
+
+### Novidades
+
+- **web:** telas de entrega, biometria e listas mais legíveis em campo ([c9a5bbd](https://github.com/leodalaqua/PREVENTBASE/commit/c9a5bbd8ed79edb849bd0c95baa664f65fd18e78))
+- **web:** base de UI com ícones SVG, foco visível e alvos de toque ([59da36a](https://github.com/leodalaqua/PREVENTBASE/commit/59da36a3e99ecd21335a58ce576cad914eeb1bcd))
+
 ## 26.10.11.1 — 2026-10-11
 
 ### Novidades
