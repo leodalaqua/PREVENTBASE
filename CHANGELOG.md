@@ -3,6 +3,12 @@
 Formato `AA.MM.DD.N`: data do commit + sequência daquele dia. Gerado a partir dos commits por
 `C:\ROBBY\scripts\versioning\release.mjs` — não editar à mão (ajuste a mensagem do commit).
 
+## 26.10.12.4 — 2026-10-12
+
+### Novidades
+
+- **admin:** liberar acesso escolhendo perfis e empresa ([d1eb277](https://github.com/leodalaqua/PREVENTBASE/commit/d1eb277493e90b1d659a4d96292c208344c627d0))
+
 ## 26.10.12.3 — 2026-10-12
 
 ### Novidades
