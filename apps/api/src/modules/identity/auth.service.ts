@@ -9,14 +9,36 @@ import { AuditService } from "../../core/audit.service.js";
 import { type AccessPayload, AuthGuard } from "../../core/auth.guard.js";
 import { authed, ctx, DomainError } from "../../core/context.js";
 import { PrismaService } from "../../core/prisma.service.js";
+import { SSO_APP, type SsoIdentity, ssoCheck, ssoRedeem } from "./sso.js";
 
-const attempts = new Map<string, { count: number; first: number }>();
-const WINDOW_MS = 10 * 60_000;
-const MAX_ATTEMPTS = 10;
+/** Padrão do ecossistema: 3 falhas por login+IP ou 20 por IP em 15 min → bloqueio por 15 min. */
+const WINDOW_MS = 15 * 60_000;
+const MAX_PER_LOGIN = 3;
+const MAX_PER_IP = 20;
+const failures = new Map<string, { count: number; first: number; until: number }>();
+
+const SSO_MFA_TTL_MS = 5 * 60_000;
+const SSO_MFA_MAX_TRIES = 3;
+const ssoMfaPending = new Map<string, { userId: string; sid: string; exp: number; tries: number }>();
 
 function sha(value: string): string {
   return createHash("sha256").update(value).digest("hex");
 }
+
+function isBlocked(key: string): boolean {
+  return (failures.get(key)?.until ?? 0) > Date.now();
+}
+
+function addFailure(key: string, max: number): void {
+  const now = Date.now();
+  let f = failures.get(key);
+  if (!f || (now - f.first >= WINDOW_MS && f.until <= now)) f = { count: 0, first: now, until: 0 };
+  f.count++;
+  if (f.count >= max) f.until = now + WINDOW_MS;
+  failures.set(key, f);
+}
+
+const blockedError = () => new DomainError(429, "TOO_MANY_ATTEMPTS", "Login bloqueado após 3 tentativas. Aguarde 15 minutos.");
 
 @Injectable()
 export class AuthService {
@@ -27,40 +49,32 @@ export class AuthService {
     private readonly guard: AuthGuard,
   ) {}
 
-  private throttle(key: string): void {
-    const now = Date.now();
-    const a = attempts.get(key);
-    if (a && now - a.first < WINDOW_MS && a.count >= MAX_ATTEMPTS) {
-      throw new DomainError(429, "TOO_MANY_ATTEMPTS", "Muitas tentativas. Aguarde alguns minutos.");
-    }
-  }
-
-  private fail(key: string): void {
-    const now = Date.now();
-    const a = attempts.get(key);
-    if (!a || now - a.first >= WINDOW_MS) attempts.set(key, { count: 1, first: now });
-    else a.count++;
+  ssoConfig() {
+    return { url: config.sso.url, app: SSO_APP, local: config.sso.localLogin };
   }
 
   async login(email: string, password: string, mfaCode?: string) {
+    if (!config.sso.localLogin) throw new DomainError(403, "LOCAL_LOGIN_DISABLED", "Login local desativado. Use o login único Veritech.");
     const c = ctx();
-    const key = `${c.ip}:${email}`;
-    this.throttle(key);
+    const loginKey = `login:${c.ip}:${email}`;
+    const ipKey = `ip:${c.ip}`;
+    if (isBlocked(loginKey) || isBlocked(ipKey)) throw blockedError();
+    const fail = (err: DomainError) => {
+      addFailure(loginKey, MAX_PER_LOGIN);
+      addFailure(ipKey, MAX_PER_IP);
+      return isBlocked(loginKey) || isBlocked(ipKey) ? blockedError() : err;
+    };
     const user = await this.prisma.user.findUnique({ where: { email } });
     const ok = user && user.status === "ACTIVE" && (await bcrypt.compare(password, user.passwordHash));
     if (!user || !ok) {
-      this.fail(key);
       if (user) await this.audit.log({ tenantId: user.tenantId, userId: user.id, action: "auth.login_failed", entityType: "User", entityId: user.id });
-      throw new DomainError(401, "INVALID_CREDENTIALS", "E-mail ou senha inválidos");
+      throw fail(new DomainError(401, "INVALID_CREDENTIALS", "E-mail ou senha inválidos"));
     }
     if (user.mfaEnabled) {
       if (!mfaCode) throw new DomainError(401, "MFA_REQUIRED", "Informe o código do autenticador");
-      if (!this.checkTotp(user.mfaSecret!, mfaCode)) {
-        this.fail(key);
-        throw new DomainError(401, "MFA_INVALID", "Código do autenticador inválido");
-      }
+      if (!this.checkTotp(user.mfaSecret!, mfaCode)) throw fail(new DomainError(401, "MFA_INVALID", "Código do autenticador inválido"));
     }
-    attempts.delete(key);
+    failures.delete(loginKey);
     const tokens = await this.issue(user.id, user.tenantId, randomUUID());
     await this.prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
     await this.audit.log({ tenantId: user.tenantId, userId: user.id, action: "auth.login", entityType: "User", entityId: user.id });
@@ -77,7 +91,95 @@ export class AuthService {
     return tokens;
   }
 
-  private async issue(userId: string, tenantId: string, familyId: string) {
+  /**
+   * Login único Veritech: resgata o ticket na central e emite a sessão de sempre.
+   * Passkey central dispensa TOTP; senha central exige o TOTP local (desafio via mfaToken, ticket é de uso único).
+   */
+  async loginSso(input: { ticket?: string; mfaToken?: string; mfaCode?: string }) {
+    if (input.mfaToken) return this.finishSsoMfa(input.mfaToken, input.mfaCode);
+    if (!input.ticket) throw new DomainError(400, "VALIDATION", "Ticket ausente");
+    const identity = await ssoRedeem(input.ticket);
+    const user = await this.ssoUser(identity);
+    if (identity.metodo !== "passkey" && user.mfaEnabled) {
+      const now = Date.now();
+      for (const [k, p] of ssoMfaPending) if (p.exp <= now) ssoMfaPending.delete(k);
+      const mfaToken = randomBytes(24).toString("base64url");
+      ssoMfaPending.set(mfaToken, { userId: user.id, sid: identity.sid, exp: now + SSO_MFA_TTL_MS, tries: 0 });
+      throw new DomainError(401, "MFA_REQUIRED", "Informe o código do autenticador", { mfaToken });
+    }
+    return this.completeSso(user.id, user.tenantId, identity.sid, identity.metodo);
+  }
+
+  private async finishSsoMfa(mfaToken: string, mfaCode?: string) {
+    const pending = ssoMfaPending.get(mfaToken);
+    if (!pending || pending.exp <= Date.now()) {
+      ssoMfaPending.delete(mfaToken);
+      throw new DomainError(401, "SSO_INVALID", "Login único expirado. Entre novamente.");
+    }
+    if (!mfaCode) throw new DomainError(401, "MFA_REQUIRED", "Informe o código do autenticador", { mfaToken });
+    const user = await this.prisma.user.findUnique({ where: { id: pending.userId } });
+    if (!user || user.status !== "ACTIVE") {
+      ssoMfaPending.delete(mfaToken);
+      throw new DomainError(403, "USER_BLOCKED", "Usuário bloqueado no PreventBase");
+    }
+    if (user.mfaEnabled && !this.checkTotp(user.mfaSecret!, mfaCode)) {
+      addFailure(`ip:${ctx().ip}`, MAX_PER_IP);
+      if (++pending.tries >= SSO_MFA_MAX_TRIES) {
+        ssoMfaPending.delete(mfaToken);
+        throw blockedError();
+      }
+      throw new DomainError(401, "MFA_INVALID", "Código do autenticador inválido", { mfaToken });
+    }
+    ssoMfaPending.delete(mfaToken);
+    return this.completeSso(user.id, user.tenantId, pending.sid, "senha");
+  }
+
+  private async completeSso(userId: string, tenantId: string, sid: string, metodo: SsoIdentity["metodo"]) {
+    const tokens = await this.issue(userId, tenantId, randomUUID(), sid);
+    await this.prisma.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } });
+    await this.audit.log({ tenantId, userId, action: "auth.login", entityType: "User", entityId: userId, after: { method: "sso", via: metodo } });
+    return tokens;
+  }
+
+  /** Usuário local por e-mail (o PreventBase não guarda CPF do usuário). Novo: perfil Consulta (ou Super Admin), sem senha utilizável. */
+  private async ssoUser(identity: SsoIdentity) {
+    const noAccess = () => new DomainError(403, "SSO_NO_ACCESS", "Usuário sem cadastro no PreventBase. Peça acesso ao administrador.");
+    if (!identity.email) throw noAccess();
+    const existing = await this.prisma.user.findFirst({ where: { email: { equals: identity.email, mode: "insensitive" } } });
+    if (existing) {
+      if (existing.status !== "ACTIVE") throw new DomainError(403, "USER_BLOCKED", "Usuário bloqueado no PreventBase");
+      if (identity.isAdmin) await this.ensureSsoAdmin(existing.id, existing.tenantId);
+      return existing;
+    }
+    const tenants = await this.prisma.tenant.findMany({ select: { id: true }, take: 2 });
+    if (tenants.length !== 1) throw noAccess();
+    const tenantId = tenants[0]!.id;
+    const role = await this.prisma.role.findFirst({ where: { tenantId: null, key: identity.isAdmin ? "super_admin" : "viewer" } });
+    if (!role) throw noAccess();
+    const user = await this.prisma.user.create({
+      data: {
+        tenantId,
+        email: identity.email,
+        name: identity.nome || identity.email,
+        passwordHash: await bcrypt.hash(randomBytes(32).toString("base64url"), 12),
+        roles: { create: [{ roleId: role.id }] },
+      },
+    });
+    await this.audit.log({ tenantId, userId: user.id, action: "auth.sso_user_created", entityType: "User", entityId: user.id, after: { role: role.key } });
+    return user;
+  }
+
+  private async ensureSsoAdmin(userId: string, tenantId: string): Promise<void> {
+    const role = await this.prisma.role.findFirst({ where: { tenantId: null, key: "super_admin" } });
+    if (!role) return;
+    const has = await this.prisma.userRole.findFirst({ where: { userId, roleId: role.id, companyId: null } });
+    if (has) return;
+    await this.prisma.userRole.create({ data: { userId, roleId: role.id } });
+    this.guard.invalidate();
+    await this.audit.log({ tenantId, userId, action: "auth.sso_admin_granted", entityType: "User", entityId: userId });
+  }
+
+  private async issue(userId: string, tenantId: string, familyId: string, ssoSid: string | null = null) {
     const c = ctx();
     const sessionId = randomUUID();
     const refreshToken = `${sessionId}.${randomBytes(32).toString("base64url")}`;
@@ -91,6 +193,7 @@ export class AuthService {
         deviceId: c.deviceId,
         ip: c.ip,
         userAgent: c.userAgent,
+        ssoSid,
         expiresAt: new Date(Date.now() + config.refreshTtlDays * 86_400_000),
       },
     });
@@ -110,10 +213,15 @@ export class AuthService {
       throw new DomainError(401, "REFRESH_REUSED", "Sessão encerrada por segurança. Entre novamente.");
     }
     if (session.expiresAt < new Date() || session.user.status !== "ACTIVE") throw new DomainError(401, "REFRESH_EXPIRED", "Sessão expirada");
+    if (session.ssoSid && (await ssoCheck(session.ssoSid)) === false) {
+      await this.prisma.session.updateMany({ where: { familyId: session.familyId, revokedAt: null }, data: { revokedAt: new Date(), revokedReason: "sso_ended" } });
+      this.guard.invalidate();
+      throw new DomainError(401, "SSO_ENDED", "Sessão do login único encerrada. Entre novamente.");
+    }
     const claimed = await this.prisma.session.updateMany({ where: { id: session.id, rotatedAt: null }, data: { rotatedAt: new Date(), revokedAt: new Date(), revokedReason: "rotated" } });
     if (claimed.count !== 1) throw new DomainError(401, "REFRESH_RACE", "Sessão já renovada");
     this.guard.invalidate(session.id);
-    return this.issue(session.userId, session.tenantId, session.familyId);
+    return this.issue(session.userId, session.tenantId, session.familyId, session.ssoSid);
   }
 
   async logout(): Promise<void> {

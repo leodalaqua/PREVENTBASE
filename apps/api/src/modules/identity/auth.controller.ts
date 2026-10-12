@@ -6,10 +6,30 @@ import { zod } from "../../core/http.js";
 import { AuthService } from "./auth.service.js";
 
 const codeSchema = z.object({ code: z.string().min(6).max(10) });
+const ssoSchema = z
+  .object({
+    ticket: z.string().trim().min(1).max(300).optional(),
+    mfaToken: z.string().trim().min(1).max(100).optional(),
+    mfaCode: z.string().trim().max(10).optional(),
+  })
+  .refine((b) => b.ticket || b.mfaToken, { message: "Informe o ticket do login único" });
 
 @Controller("auth")
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
+
+  @Public()
+  @Get("sso-config")
+  ssoConfig() {
+    return this.auth.ssoConfig();
+  }
+
+  @Public()
+  @Post("sso")
+  @HttpCode(200)
+  sso(@Body(zod(ssoSchema)) body: z.infer<typeof ssoSchema>) {
+    return this.auth.loginSso(body);
+  }
 
   @Public()
   @Post("login")

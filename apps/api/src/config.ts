@@ -25,4 +25,9 @@ export const config = {
   },
   publicBaseUrl: (process.env.PUBLIC_BASE_URL ?? "http://localhost:3100").replace(/\/$/, ""),
   caepiSourceUrl: process.env.CAEPI_SOURCE_URL ?? "",
+  sso: {
+    url: (process.env.VERITECH_SSO_URL || "https://servidor.taild57d57.ts.net").replace(/\/$/, ""),
+    internalUrl: (process.env.VERITECH_SSO_INTERNAL_URL || "http://127.0.0.1:2922").replace(/\/$/, ""),
+    localLogin: process.env.VERITECH_SSO_LOCAL_LOGIN !== "0",
+  },
 };

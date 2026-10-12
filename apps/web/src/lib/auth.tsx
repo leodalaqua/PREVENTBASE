@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from "react";
 import { api, clearTokens, hasSession, onSessionLost } from "./api";
+import { ssoConfig, ssoLogoutUrl } from "./sso";
 
 export interface Me {
   id: string;
@@ -50,7 +51,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await api.post("/auth/logout").catch(() => undefined);
     clearTokens();
     qc.clear();
-    router.replace("/login");
+    const sso = await ssoConfig().catch(() => null);
+    if (sso) location.assign(ssoLogoutUrl(sso));
+    else router.replace("/login");
   }, [qc, router]);
 
   return <Ctx.Provider value={{ me, loading: !ready || isLoading, can, logout, reload: () => void refetch() }}>{children}</Ctx.Provider>;

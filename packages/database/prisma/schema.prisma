@@ -300,6 +300,8 @@ model Session {
   rotatedAt        DateTime? @db.Timestamptz(3)
   revokedAt        DateTime? @db.Timestamptz(3)
   revokedReason    String?
+  /// Sessão central do login único Veritech (C:\ROBBY\docs\robby\sso-veritech.md); conferida no refresh.
+  ssoSid           String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

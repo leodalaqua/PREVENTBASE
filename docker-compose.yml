@@ -19,6 +19,9 @@ x-app-env: &app-env
   BIOMETRIC_SERVICE_TOKEN: ${BIOMETRIC_SERVICE_TOKEN}
   PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-http://localhost:3100}
   CAEPI_SOURCE_URL: ${CAEPI_SOURCE_URL:-}
+  VERITECH_SSO_URL: ${VERITECH_SSO_URL:-https://servidor.taild57d57.ts.net}
+  VERITECH_SSO_INTERNAL_URL: http://host.docker.internal:2922
+  VERITECH_SSO_LOCAL_LOGIN: ${VERITECH_SSO_LOCAL_LOGIN:-1}
   SEED_TENANT_NAME: ${SEED_TENANT_NAME:-PreventBase}
   SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@preventbase.local}
   SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
@@ -116,6 +119,8 @@ services:
       <<: *app-env
       APP_HOST: 0.0.0.0
       APP_PORT: "3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       postgres: { condition: service_healthy }
       redis: { condition: service_healthy }

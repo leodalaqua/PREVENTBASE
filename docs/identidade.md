@@ -14,10 +14,21 @@ Login, sessão, MFA, perfis/permissões com escopo (§53-§55) e dispositivos co
 - Web: access só em memória; refresh em `localStorage` (`pb.refresh`); chave do aparelho em `pb.deviceKey`.
 - Seed (`packages/database/src/seed.ts`): permissões, 10 perfis, motivos de entrega, termo v1, admin (`SEED_ADMIN_EMAIL`/`SEED_ADMIN_PASSWORD` do `.env`, só na primeira execução).
 
+## Login único Veritech
+
+Contrato canônico: [sso-veritech.md](file:///C:/ROBBY/docs/robby/sso-veritech.md) (app `preventbase`).
+
+- `GET /auth/sso-config` → `{url, app, local}` · `POST /auth/sso {ticket}` resgata na central (`VERITECH_SSO_INTERNAL_URL`, 5 s; 401 inválido, 503 indisponível) e emite o mesmo access + refresh, com `sessions.ssoSid`.
+- Usuário por e-mail (sem CPF no `User`); novo → perfil `viewer` (ou `super_admin` se `isAdmin`), sem empresa, senha aleatória; só cria se houver um único tenant. Bloqueado → 403.
+- `metodo: passkey` dispensa TOTP; `senha` com MFA ativo → 401 `MFA_REQUIRED` + `details.mfaToken` (5 min, 3 tentativas) e reenvio `POST /auth/sso {mfaToken, mfaCode}`.
+- Refresh de sessão SSO chama `/sso/check`: `active:false` revoga a família (401 `SSO_ENDED`); falha de rede mantém.
+- Login por senha só com `VERITECH_SSO_LOCAL_LOGIN` ≠ `0`; 3 falhas por e-mail+IP ou 20 por IP em 15 min → 429.
+- Web: botão principal no `login/` (redirecionamento automático 1x por aba, `pb.ssoAuto`), conta local atrás de "Usar conta local"; Sair → `/sair` da central.
+
 ## Fora do padrão do ecossistema
 
 Padrão Robby = encerrar após 30 min sem interação ([authentication.md](file:///C:/ROBBY/docs/robby/authentication.md)). Hoje a sessão vive enquanto o refresh for válido (14 dias). Alinhar: keeper de inatividade no `(app)/layout.tsx` + TTL do refresh por inatividade.
 
 ## Arquivos
 
-`apps/api/src/modules/identity/` · `apps/api/src/core/auth.guard.ts` · `apps/web/src/lib/api.ts`, `auth.tsx` · web `login/`, `(app)/conta/`, `(app)/dispositivo/`.
+`apps/api/src/modules/identity/` (SSO: `sso.ts`, `auth.service.ts`, `sso.test.ts`) · `apps/api/src/core/auth.guard.ts` · `apps/web/src/lib/api.ts`, `auth.tsx`, `sso.ts` · web `login/`, `(app)/conta/`, `(app)/dispositivo/`.

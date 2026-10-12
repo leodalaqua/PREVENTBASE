@@ -99,7 +99,7 @@ async function send(path: string, opts: RequestOpts): Promise<Response> {
 export async function request<T = unknown>(path: string, opts: RequestOpts = {}): Promise<T> {
   if (!accessToken && hasSession()) await refresh();
   let res = await send(path, opts);
-  if (res.status === 401 && hasSession() && !path.startsWith("/auth/login")) {
+  if (res.status === 401 && hasSession() && !path.startsWith("/auth/login") && !path.startsWith("/auth/sso")) {
     if (await refresh()) res = await send(path, opts);
     else listeners.forEach((l) => l());
   }
