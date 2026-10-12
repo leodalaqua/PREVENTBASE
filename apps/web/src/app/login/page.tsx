@@ -7,7 +7,7 @@ import { IconDownload } from "@/components/icons";
 import { PasskeyLoginButton } from "@/components/passkey/passkey-ui";
 import { passkeyOffer } from "@/components/passkey/webauthn-browser";
 import { usePwa } from "@/components/pwa";
-import { Button, ErrorBox, Field, Input } from "@/components/ui";
+import { Button, ErrorBox, Field, Input, Notice } from "@/components/ui";
 import { api, ApiError, hasSession, setTokens } from "@/lib/api";
 import { passkeyApi } from "@/lib/passkey";
 import { type SsoConfig, ssoAuthorizeUrl, ssoAutoRedirectOnce, ssoConfig, ssoLogin, takeSsoTicket } from "@/lib/sso";
@@ -28,6 +28,7 @@ function LoginForm() {
   const [ssoBusy, setSsoBusy] = useState(false);
   const [ssoMfaToken, setSsoMfaToken] = useState<string | null>(null);
   const [showLocal, setShowLocal] = useState(false);
+  const [pendingMsg, setPendingMsg] = useState<string | null>(null);
   const started = useRef(false);
   const { canInstall, install, iosHint } = usePwa();
 
@@ -44,6 +45,11 @@ function LoginForm() {
       return;
     }
     setSsoMfaToken(null);
+    if (err instanceof ApiError && err.code === "SSO_PENDING") {
+      setPendingMsg(err.message);
+      setError(null);
+      return;
+    }
     setError(err);
   }
 
@@ -128,6 +134,7 @@ function LoginForm() {
   return (
     <div className={card}>
       <h2 className="text-center text-base font-semibold text-zinc-800">Acesse sua conta</h2>
+      {pendingMsg && <Notice tone="warn">{pendingMsg}</Notice>}
       <Button type="button" loading={ssoBusy} disabled={!sso} className="min-h-11 w-full" onClick={() => sso && location.assign(ssoAuthorizeUrl(sso))}>
         {ssoBusy ? "Entrando…" : "Entrar com login único Veritech"}
       </Button>

@@ -93,21 +93,21 @@ export class AuthService {
 
   /**
    * Login único Veritech: resgata o ticket na central e emite a sessão de sempre.
-   * Passkey central dispensa TOTP; senha central exige o TOTP local (desafio via mfaToken, ticket é de uso único).
+   * Segundo fator na central (`mfa` ou passkey) dispensa TOTP; sem ele, TOTP ativo é exigido (desafio via mfaToken, ticket é de uso único).
    */
   async loginSso(input: { ticket?: string; mfaToken?: string; mfaCode?: string }) {
     if (input.mfaToken) return this.finishSsoMfa(input.mfaToken, input.mfaCode);
     if (!input.ticket) throw new DomainError(400, "VALIDATION", "Ticket ausente");
     const identity = await ssoRedeem(input.ticket);
     const user = await this.ssoUser(identity);
-    if (identity.metodo !== "passkey" && user.mfaEnabled) {
+    if (!identity.mfa && identity.metodo !== "passkey" && user.mfaEnabled) {
       const now = Date.now();
       for (const [k, p] of ssoMfaPending) if (p.exp <= now) ssoMfaPending.delete(k);
       const mfaToken = randomBytes(24).toString("base64url");
       ssoMfaPending.set(mfaToken, { userId: user.id, sid: identity.sid, exp: now + SSO_MFA_TTL_MS, tries: 0 });
       throw new DomainError(401, "MFA_REQUIRED", "Informe o código do autenticador", { mfaToken });
     }
-    return this.completeSso(user.id, user.tenantId, identity.sid, identity.metodo);
+    return this.completeSso(user.id, user.tenantId, identity.sid, identity.metodo, identity.mfa);
   }
 
   private async finishSsoMfa(mfaToken: string, mfaCode?: string) {
@@ -131,41 +131,52 @@ export class AuthService {
       throw new DomainError(401, "MFA_INVALID", "Código do autenticador inválido", { mfaToken });
     }
     ssoMfaPending.delete(mfaToken);
-    return this.completeSso(user.id, user.tenantId, pending.sid, "senha");
+    return this.completeSso(user.id, user.tenantId, pending.sid, "senha", false);
   }
 
-  private async completeSso(userId: string, tenantId: string, sid: string, metodo: SsoIdentity["metodo"]) {
+  private async completeSso(userId: string, tenantId: string, sid: string, metodo: SsoIdentity["metodo"], centralMfa: boolean) {
     const tokens = await this.issue(userId, tenantId, randomUUID(), sid);
     await this.prisma.user.update({ where: { id: userId }, data: { lastLoginAt: new Date() } });
-    await this.audit.log({ tenantId, userId, action: "auth.login", entityType: "User", entityId: userId, after: { method: "sso", via: metodo } });
+    await this.audit.log({ tenantId, userId, action: "auth.login", entityType: "User", entityId: userId, after: { method: "sso", via: metodo, centralMfa } });
     return tokens;
   }
 
-  /** Usuário local por e-mail (o PreventBase não guarda CPF do usuário). Novo: perfil Consulta (ou Super Admin), sem senha utilizável. */
+  /**
+   * Usuário local por e-mail (o PreventBase não guarda CPF do usuário), sem senha utilizável.
+   * Novo: nasce BLOCKED e sem perfil (pendente de liberação pelo admin); `isAdmin` central → Super Admin ativo.
+   */
   private async ssoUser(identity: SsoIdentity) {
     const noAccess = () => new DomainError(403, "SSO_NO_ACCESS", "Usuário sem cadastro no PreventBase. Peça acesso ao administrador.");
+    const pending = () => new DomainError(403, "SSO_PENDING", "Acesso criado. Aguarde a liberação do administrador.");
     if (!identity.email) throw noAccess();
     const existing = await this.prisma.user.findFirst({ where: { email: { equals: identity.email, mode: "insensitive" } } });
     if (existing) {
-      if (existing.status !== "ACTIVE") throw new DomainError(403, "USER_BLOCKED", "Usuário bloqueado no PreventBase");
+      if (existing.status !== "ACTIVE") {
+        const hasRole = await this.prisma.userRole.findFirst({ where: { userId: existing.id }, select: { id: true } });
+        throw hasRole ? new DomainError(403, "USER_BLOCKED", "Usuário bloqueado no PreventBase") : pending();
+      }
       if (identity.isAdmin) await this.ensureSsoAdmin(existing.id, existing.tenantId);
       return existing;
     }
     const tenants = await this.prisma.tenant.findMany({ select: { id: true }, take: 2 });
     if (tenants.length !== 1) throw noAccess();
     const tenantId = tenants[0]!.id;
-    const role = await this.prisma.role.findFirst({ where: { tenantId: null, key: identity.isAdmin ? "super_admin" : "viewer" } });
-    if (!role) throw noAccess();
+    const adminRole = identity.isAdmin ? await this.prisma.role.findFirst({ where: { tenantId: null, key: "super_admin" } }) : null;
+    if (identity.isAdmin && !adminRole) throw noAccess();
     const user = await this.prisma.user.create({
       data: {
         tenantId,
         email: identity.email,
         name: identity.nome || identity.email,
         passwordHash: await bcrypt.hash(randomBytes(32).toString("base64url"), 12),
-        roles: { create: [{ roleId: role.id }] },
+        ...(adminRole ? { roles: { create: [{ roleId: adminRole.id }] } } : { status: "BLOCKED" as const }),
       },
     });
-    await this.audit.log({ tenantId, userId: user.id, action: "auth.sso_user_created", entityType: "User", entityId: user.id, after: { role: role.key } });
+    if (!adminRole) {
+      await this.audit.log({ tenantId, userId: user.id, action: "auth.sso_user_pending", entityType: "User", entityId: user.id });
+      throw pending();
+    }
+    await this.audit.log({ tenantId, userId: user.id, action: "auth.sso_user_created", entityType: "User", entityId: user.id, after: { role: adminRole.key } });
     return user;
   }
 

@@ -12,6 +12,8 @@ export interface SsoIdentity {
   isAdmin: boolean;
   sid: string;
   metodo: "senha" | "passkey";
+  /** Entrou com segundo fator na central (senha + 2FA ou biometria). */
+  mfa: boolean;
 }
 
 function post(path: string, body: unknown): Promise<Response> {
@@ -45,6 +47,7 @@ export async function ssoRedeem(ticket: string): Promise<SsoIdentity> {
     isAdmin: u.isAdmin === true,
     sid: u.sid,
     metodo: u.metodo === "passkey" ? "passkey" : "senha",
+    mfa: u.mfa === true,
   };
 }
 

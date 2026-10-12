@@ -19,8 +19,8 @@ Login, sessão, MFA, perfis/permissões com escopo (§53-§55) e dispositivos co
 Contrato canônico: [sso-veritech.md](file:///C:/ROBBY/docs/robby/sso-veritech.md) (app `preventbase`).
 
 - `GET /auth/sso-config` → `{url, app, local}` · `POST /auth/sso {ticket}` resgata na central (`VERITECH_SSO_INTERNAL_URL`, 5 s; 401 inválido, 503 indisponível) e emite o mesmo access + refresh, com `sessions.ssoSid`.
-- Usuário por e-mail (sem CPF no `User`); novo → perfil `viewer` (ou `super_admin` se `isAdmin`), sem empresa, senha aleatória; só cria se houver um único tenant. Bloqueado → 403.
-- `metodo: passkey` dispensa TOTP; `senha` com MFA ativo → 401 `MFA_REQUIRED` + `details.mfaToken` (5 min, 3 tentativas) e reenvio `POST /auth/sso {mfaToken, mfaCode}`.
+- Usuário por e-mail (sem CPF no `User`); só cria se houver um único tenant; senha aleatória. Novo → **sem nenhum acesso**: `status BLOCKED` e nenhum perfil, 403 `SSO_PENDING` "Acesso criado. Aguarde a liberação do administrador." (repete enquanto bloqueado e sem perfil; web mostra aviso no `login/`). Liberar = atribuir perfil/escopo (`PATCH /users/:id {roles}`) e reativar. Exceção: `isAdmin` central → `super_admin` ativo. Bloqueado com perfil → 403 `USER_BLOCKED`.
+- `mfa: true` do redeem (senha + 2FA ou biometria na central) ou `metodo: passkey` dispensa o TOTP; sem segundo fator na central e MFA ativo → 401 `MFA_REQUIRED` + `details.mfaToken` (5 min, 3 tentativas) e reenvio `POST /auth/sso {mfaToken, mfaCode}`.
 - Refresh de sessão SSO chama `/sso/check`: `active:false` revoga a família (401 `SSO_ENDED`); falha de rede mantém.
 - Login por senha só com `VERITECH_SSO_LOCAL_LOGIN` ≠ `0`; 3 falhas por e-mail+IP ou 20 por IP em 15 min → 429.
 - Web: botão principal no `login/` (redirecionamento automático 1x por aba, `pb.ssoAuto`), conta local atrás de "Usar conta local"; Sair → `/sair` da central.

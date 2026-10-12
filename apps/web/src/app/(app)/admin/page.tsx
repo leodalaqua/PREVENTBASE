@@ -189,7 +189,7 @@ function Users() {
   const { data } = useQuery({ queryKey: ["users"], queryFn: () => api.get<UserRow[]>("/users?pageSize=500") });
   const { data: roles } = useQuery({ queryKey: ["roles"], queryFn: () => api.get<Role[]>("/roles") });
   const [open, setOpen] = useState(false);
-  const [f, setF] = useState({ name: "", email: "", password: "", roleKey: "sst_technician", companyId: "" });
+  const [f, setF] = useState({ name: "", email: "", password: "", roleKey: "", companyId: "" });
   const create = useSave(() => api.post("/users", { name: f.name, email: f.email, password: f.password, roles: [{ roleKey: f.roleKey, companyId: f.companyId || null }] }), [["users"]], "Usuário criado", () => setOpen(false));
   const toggle = useSave((u: UserRow) => api.patch(`/users/${u.id}`, { status: u.status === "ACTIVE" ? "BLOCKED" : "ACTIVE" }), [["users"]], "Usuário atualizado");
   return (
@@ -214,12 +214,13 @@ function Users() {
           <Field label="Senha inicial" hint="Mínimo 10 caracteres"><Input type="password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} /></Field>
           <Field label="Perfil">
             <Select value={f.roleKey} onChange={(e) => setF({ ...f, roleKey: e.target.value })}>
+              <option value="" disabled>Selecione o perfil</option>
               {roles?.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
             </Select>
           </Field>
           <Field label="Escopo (empresa)" hint="Vazio = todas"><CompanySelect allowAll value={f.companyId} onChange={(v) => setF({ ...f, companyId: v })} /></Field>
           <ErrorBox error={create.error} />
-          <div className="flex justify-end"><Button loading={create.isPending} onClick={() => create.mutate(undefined)}>Criar</Button></div>
+          <div className="flex justify-end"><Button loading={create.isPending} disabled={!f.roleKey} onClick={() => create.mutate(undefined)}>Criar</Button></div>
         </div>
       </Modal>
     </Card>
