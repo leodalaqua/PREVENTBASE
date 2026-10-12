@@ -18,7 +18,7 @@ export function BrandTile({ className }: { className?: string }) {
 export function BrandSplash() {
   return (
     <div className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-zinc-900 bg-[radial-gradient(ellipse_at_center,rgba(251,203,10,0.14),transparent_60%)]" role="status" aria-label="Carregando">
-      <BrandMark className="w-28 animate-pulse" />
+      <BrandMark className="w-28 animate-pulse motion-reduce:animate-none" />
       <Wordmark onDark className="w-48" />
     </div>
   );

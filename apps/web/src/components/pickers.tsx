@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, qs } from "@/lib/api";
 import { companyName, type EpiProduct, type Paged, useCompanies, useEpis, type Variant, variantLabel, useWarehouses } from "@/lib/hooks";
 import { maskCpf } from "@/lib/format";
+import { IconScan } from "./icons";
 import { Button, Input, Select, StatusBadge } from "./ui";
 
 export function CompanySelect({ value, onChange, allowAll }: { value: string; onChange: (v: string) => void; allowAll?: boolean }) {
@@ -65,15 +66,19 @@ export function EmployeePicker({ onPick }: { onPick: (e: EmployeeLite) => void }
   });
   return (
     <div className="space-y-2">
-      <Input autoFocus placeholder="Nome, matrícula ou CPF" value={q} onChange={(e) => setQ(e.target.value)} />
-      {isFetching && <p className="text-xs text-zinc-500">Buscando…</p>}
-      <ul className="divide-y divide-zinc-100 rounded-lg border border-zinc-200 bg-white empty:hidden">
+      <Input type="search" enterKeyHint="search" autoFocus placeholder="Nome, matrícula ou CPF" aria-label="Buscar colaborador" value={q} onChange={(e) => setQ(e.target.value)} />
+      {isFetching && (
+        <p className="text-xs text-zinc-600" role="status">
+          Buscando…
+        </p>
+      )}
+      <ul className="divide-y divide-zinc-100 overflow-hidden rounded-lg border border-zinc-200 bg-white empty:hidden">
         {data?.items.map((e) => (
           <li key={e.id}>
-            <button className="flex w-full items-center justify-between gap-2 px-3 py-3 text-left hover:bg-zinc-50" onClick={() => onPick(e)}>
-              <span>
-                <span className="block font-medium">{e.name}</span>
-                <span className="text-xs text-zinc-500">
+            <button className="flex min-h-14 w-full items-center justify-between gap-2 px-3 py-3 text-left transition-colors duration-100 hover:bg-zinc-50 active:bg-brand-50" onClick={() => onPick(e)}>
+              <span className="min-w-0">
+                <span className="break-any block font-medium text-zinc-900">{e.name}</span>
+                <span className="break-any text-xs text-zinc-600">
                   {e.registration ?? "s/ matrícula"} · {maskCpf(e.cpf)} · {e.job?.name ?? "sem função"} · {companyName(e.company)}
                 </span>
               </span>
@@ -123,13 +128,14 @@ export function ScanButton({ onCode }: { onCode: (code: string) => void }) {
   if (!supported) return null;
   return (
     <>
-      <Button type="button" variant="secondary" onClick={() => setOpen(true)} title="Ler código de barras / QR">
-        ▥ Ler
+      <Button type="button" variant="secondary" className="shrink-0" onClick={() => setOpen(true)} title="Ler código de barras / QR">
+        <IconScan size={18} />
+        Ler
       </Button>
       {open && (
-        <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-black/90 p-4" onClick={() => setOpen(false)}>
-          <video ref={video} playsInline muted className="max-h-[70vh] w-full max-w-md rounded-lg" />
-          <p className="mt-3 text-sm text-white">Aponte para o código de barras ou QR do lote. Toque para cancelar.</p>
+        <div className="backdrop-enter fixed inset-0 z-[70] flex flex-col items-center justify-center bg-black/90 px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-[max(1rem,env(safe-area-inset-top))]" onClick={() => setOpen(false)}>
+          <video ref={video} playsInline muted className="max-h-[70dvh] w-full max-w-md rounded-lg" />
+          <p className="mt-3 max-w-md text-center text-sm text-white">Aponte para o código de barras ou QR do lote. Toque para cancelar.</p>
         </div>
       )}
     </>
@@ -167,7 +173,7 @@ export function EpiPicker({ onPick }: { onPick: (p: PickedVariant) => void }) {
   if (product) {
     return (
       <div className="space-y-2">
-        <p className="text-sm font-medium">{product.description}</p>
+        <p className="break-any text-sm font-medium text-zinc-900">{product.description}</p>
         <div className="flex flex-wrap gap-2">
           {product.variants.filter((v) => v.active).map((v) => (
             <Button key={v.id} variant="secondary" onClick={() => onPick({ product, variant: v })}>
@@ -175,7 +181,7 @@ export function EpiPicker({ onPick }: { onPick: (p: PickedVariant) => void }) {
             </Button>
           ))}
         </div>
-        <button className="text-xs text-zinc-500 underline" onClick={() => setProduct(null)}>
+        <button className="min-h-8 text-xs text-zinc-600 underline underline-offset-2 hover:text-zinc-900" onClick={() => setProduct(null)}>
           trocar EPI
         </button>
       </div>
@@ -197,20 +203,24 @@ export function EpiPicker({ onPick }: { onPick: (p: PickedVariant) => void }) {
         />
         <ScanButton onCode={(c) => void scan(c)} />
       </div>
-      {error && <p className="text-xs text-red-700">{error}</p>}
-      <ul className="max-h-64 divide-y divide-zinc-100 overflow-y-auto rounded-lg border border-zinc-200 bg-white">
+      {error && (
+        <p className="text-xs text-red-700" role="alert">
+          {error}
+        </p>
+      )}
+      <ul className="max-h-[min(16rem,50dvh)] divide-y divide-zinc-100 overflow-y-auto overscroll-contain rounded-lg border border-zinc-200 bg-white empty:hidden">
         {data?.items.map((p) => (
           <li key={p.id}>
             <button
-              className="w-full px-3 py-2 text-left text-sm hover:bg-zinc-50"
+              className="min-h-12 w-full px-3 py-2.5 text-left text-sm transition-colors duration-100 hover:bg-zinc-50 active:bg-brand-50"
               onClick={() => {
                 const active = p.variants.filter((v) => v.active);
                 if (active.length === 1) onPick({ product: p, variant: active[0]! });
                 else setProduct(p);
               }}
             >
-              <span className="font-medium">{p.description}</span>
-              <span className="block text-xs text-zinc-500">
+              <span className="break-any font-medium text-zinc-900">{p.description}</span>
+              <span className="block text-xs text-zinc-600">
                 {p.internalCode} · CA {p.cas[0]?.caNumber ?? "—"} · {p.variants.length} variação(ões)
               </span>
             </button>
