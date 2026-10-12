@@ -3,6 +3,12 @@
 Formato `AA.MM.DD.N`: data do commit + sequência daquele dia. Gerado a partir dos commits por
 `C:\ROBBY\scripts\versioning\release.mjs` — não editar à mão (ajuste a mensagem do commit).
 
+## 26.10.12.2 — 2026-10-12
+
+### Novidades
+
+- **passkey:** botão principal da biometria com a cor da marca ([31159f8](https://github.com/leodalaqua/PREVENTBASE/commit/31159f8d122966a44b7e641a3c4dadd2946753d3))
+
 ## 26.10.12.1 — 2026-10-12
 
 ### Novidades

@@ -1,7 +1,7 @@
 # PreventBase
 
 <!-- versao:inicio -->
-**Versão atual:** `26.10.12.1` (2026-10-12) · [histórico de versões](CHANGELOG.md)
+**Versão atual:** `26.10.12.2` (2026-10-12) · [histórico de versões](CHANGELOG.md)
 <!-- versao:fim -->
 
 Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER-PLAN.md](docs/MASTER-PLAN.md) · Índice: [docs/SUMMARY.md](docs/SUMMARY.md).
@@ -10,6 +10,12 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 ## Atualizações
 
 Últimas 5 versões compiladas dos commits. Histórico completo em [CHANGELOG.md](CHANGELOG.md).
+
+### 26.10.12.2 — 2026-10-12
+
+**Novidades**
+
+- **passkey:** botão principal da biometria com a cor da marca ([31159f8](https://github.com/leodalaqua/PREVENTBASE/commit/31159f8d122966a44b7e641a3c4dadd2946753d3))
 
 ### 26.10.12.1 — 2026-10-12
 
@@ -51,11 +57,5 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 **Documentação**
 
 - **regras:** publicar com versionamento AA.MM.DD.N (release.mjs do Robby) ([ed5c27b](https://github.com/leodalaqua/PREVENTBASE/commit/ed5c27b72ed70e626287c3a276bc6bc24de89701))
-
-### 26.10.08.1 — 2026-10-08
-
-**Correções**
-
-- **caepi:** sincronizacao em streaming, validacao do ZIP e formato atual do MTE ([94b1039](https://github.com/leodalaqua/PREVENTBASE/commit/94b103902d46599dee2a704914b780963c9a32c4))
 
 <!-- atualizacoes:fim -->
