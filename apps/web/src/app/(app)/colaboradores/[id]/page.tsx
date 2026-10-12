@@ -6,6 +6,7 @@ import { use, useState } from "react";
 import { BiometricCapture } from "@/components/biometric-capture";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { EmployeeForm, type EmployeeData } from "@/components/employee-form";
+import { IconPlus } from "@/components/icons";
 import { Badge, Button, Card, ErrorBox, Field, Input, LinkButton, Loading, Modal, PageHeader, Stat, StatusBadge, Table, Tabs, useToast } from "@/components/ui";
 import { api, openFile } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -75,7 +76,7 @@ export default function EmployeePage({ params }: { params: Promise<{ id: string 
         }
         actions={
           <>
-            {can("epi.deliver") && e.status === "ACTIVE" && <LinkButton href={`/entregas/nova?employeeId=${id}`}>＋ Entregar EPI</LinkButton>}
+            {can("epi.deliver") && e.status === "ACTIVE" && <LinkButton href={`/entregas/nova?employeeId=${id}`}><IconPlus size={18} />Entregar EPI</LinkButton>}
             <Button variant="secondary" onClick={() => void openFile(`/employees/${id}/epi-sheet?format=pdf`)}>Ficha de EPI (PDF)</Button>
             {can("employee.update") && <Button variant="secondary" onClick={() => setEditing(true)}>Editar</Button>}
           </>
@@ -117,7 +118,7 @@ export default function EmployeePage({ params }: { params: Promise<{ id: string 
               ]}
             />
           </Card>
-          <p className="text-xs text-zinc-400">Exames/ASO, treinamentos, riscos e eventos eSocial (somente leitura) entram nas próximas fases do plano mestre.</p>
+          <p className="text-xs text-zinc-500">Exames/ASO, treinamentos, riscos e eventos eSocial (somente leitura) entram nas próximas fases do plano mestre.</p>
         </div>
       )}
 
@@ -156,7 +157,7 @@ export default function EmployeePage({ params }: { params: Promise<{ id: string 
                 <Badge color="green">Cadastrada</Badge> em {fmtDateTime(data.biometric.enrolledAt)} · qualidade {(data.biometric.quality * 100).toFixed(0)}%
               </p>
               <p className="text-zinc-500">Base legal: {data.biometric.legalBasis}</p>
-              <p className="text-xs text-zinc-400">O template é cifrado e fica isolado no serviço de biometria; nenhuma imagem é armazenada.</p>
+              <p className="text-xs text-zinc-500">O template é cifrado e fica isolado no serviço de biometria; nenhuma imagem é armazenada.</p>
               <div className="flex flex-wrap gap-2">
                 {can("biometric.enroll") && <Button variant="secondary" onClick={() => setEnrolling(true)}>Recadastrar</Button>}
                 {can("biometric.revoke") && <Button variant="danger" onClick={() => setRevoking(true)}>Revogar</Button>}

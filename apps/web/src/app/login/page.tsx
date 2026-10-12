@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useEffect, useRef, useState } from "react";
 import { BrandMark, Wordmark } from "@/components/brand";
+import { IconDownload } from "@/components/icons";
 import { PasskeyLoginButton } from "@/components/passkey/passkey-ui";
 import { passkeyOffer } from "@/components/passkey/webauthn-browser";
 import { usePwa } from "@/components/pwa";
@@ -106,7 +107,7 @@ function LoginForm() {
     }
   }
 
-  const card = "w-full space-y-4 rounded-2xl border-t-4 border-brand-400 bg-white p-6 shadow-2xl shadow-black/40";
+  const card = "relative w-full space-y-4 overflow-hidden rounded-2xl bg-white p-6 pt-7 shadow-2xl shadow-black/40 before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-brand-400";
 
   if (ssoMfaToken) {
     return (
@@ -131,7 +132,7 @@ function LoginForm() {
         {ssoBusy ? "Entrando…" : "Entrar com login único Veritech"}
       </Button>
       {sso?.local && !showLocal && (
-        <button type="button" onClick={() => setShowLocal(true)} className="block min-h-11 w-full text-center text-sm text-zinc-500 underline-offset-2 hover:text-zinc-800 hover:underline">
+        <button type="button" onClick={() => setShowLocal(true)} className="block min-h-11 w-full rounded-lg text-center text-sm text-zinc-600 underline-offset-2 transition-colors hover:text-zinc-900 hover:underline">
           Usar conta local
         </button>
       )}
@@ -157,7 +158,8 @@ function LoginForm() {
       <ErrorBox error={error} />
       {canInstall && (
         <Button type="button" variant="secondary" className="w-full" onClick={() => void install()}>
-          ⤓ Instalar aplicativo
+          <IconDownload size={18} />
+          Instalar aplicativo
         </Button>
       )}
       {iosHint && <p className="text-center text-xs text-zinc-500">No iPhone: Compartilhar → “Adicionar à Tela de Início”.</p>}

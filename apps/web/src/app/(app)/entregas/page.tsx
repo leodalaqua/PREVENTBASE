@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { IconPlus } from "@/components/icons";
 import { Card, Input, LinkButton, PageHeader, Pager, Select, StatusBadge, Table } from "@/components/ui";
 import { api, qs } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -32,7 +33,7 @@ export default function DeliveriesPage() {
   });
   return (
     <>
-      <PageHeader title="Entregas de EPI" actions={can("epi.deliver") && <LinkButton href="/entregas/nova">＋ Nova entrega</LinkButton>} />
+      <PageHeader title="Entregas de EPI" actions={can("epi.deliver") && <LinkButton href="/entregas/nova"><IconPlus size={18} />Nova entrega</LinkButton>} />
       <Card>
         <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
           <Input placeholder="Colaborador ou matrícula" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} className="sm:col-span-2" />

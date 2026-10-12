@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api, ApiError } from "@/lib/api";
+import { IconCheck, IconSwitchCamera } from "./icons";
 import { Button, cx, ErrorBox } from "./ui";
 
 interface Challenge {
@@ -136,21 +137,31 @@ export function BiometricCapture({
         <video ref={video} playsInline muted className={cx("h-full w-full object-cover", facing === "user" && "-scale-x-100")} />
         {phase === "idle" && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-4 text-center text-white">
-            <p className="text-sm">Posicione o colaborador de frente, com boa iluminação e sem boné/óculos escuros.</p>
+            <p className="max-w-xs text-sm leading-relaxed text-zinc-100">Posicione o colaborador de frente, com boa iluminação e sem boné/óculos escuros.</p>
             <Button onClick={() => void startCamera(facing)}>Abrir câmera</Button>
           </div>
         )}
         {phase !== "idle" && phase !== "done" && <div className="pointer-events-none absolute inset-[12%] rounded-[45%] border-4 border-white/60" />}
         {phase === "countdown" && <div className="absolute inset-0 flex items-center justify-center text-7xl font-bold text-white drop-shadow">{count}</div>}
-        {phase === "frontal" && <div className="absolute inset-x-0 bottom-4 text-center text-lg font-semibold text-white drop-shadow">OLHE PARA A CÂMERA</div>}
-        {phase === "turn" && <div className="absolute inset-x-0 bottom-4 animate-pulse text-center text-lg font-bold text-amber-300 drop-shadow">{turnLabel}</div>}
-        {phase === "sending" && <div className="absolute inset-0 flex items-center justify-center bg-black/40 text-white">Validando…</div>}
-        {phase === "done" && <div className="absolute inset-0 flex items-center justify-center bg-emerald-700/80 text-xl font-semibold text-white">✔ {purpose === "ENROLL" ? "Biometria cadastrada" : "Identidade confirmada"}</div>}
+        {phase === "frontal" && <div className="absolute inset-x-0 bottom-4 px-3 text-center text-lg font-semibold text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)]">OLHE PARA A CÂMERA</div>}
+        {phase === "turn" && <div className="absolute inset-x-0 bottom-4 animate-pulse px-3 text-center text-lg font-bold text-amber-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] motion-reduce:animate-none">{turnLabel}</div>}
+        {phase === "sending" && (
+          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 text-white" role="status">
+            <span aria-hidden="true" className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-current border-t-transparent motion-reduce:animate-[spin_1.6s_linear_infinite]" />
+            Validando…
+          </div>
+        )}
+        {phase === "done" && (
+          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-emerald-700/85 px-4 text-center text-xl font-semibold text-white" role="status">
+            <IconCheck size={28} strokeWidth={2.4} />
+            {purpose === "ENROLL" ? "Biometria cadastrada" : "Identidade confirmada"}
+          </div>
+        )}
       </div>
 
-      {challenge && phase === "ready" && <p className="text-sm text-zinc-600">Desafio: {challenge.instruction}</p>}
+      {challenge && phase === "ready" && <p className="text-sm text-zinc-700">Desafio: {challenge.instruction}</p>}
       {result && !result.verified && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+        <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">
           Não confirmado: {result.reason ?? "rosto não corresponde"}{result.liveness ? ` (similaridade ${result.score.toFixed(2)})` : ""}. Tente novamente.
         </div>
       )}
@@ -169,7 +180,8 @@ export function BiometricCapture({
               void startCamera(next);
             }}
           >
-            ⟲ Câmera
+            <IconSwitchCamera size={18} />
+            Câmera
           </Button>
         </div>
       )}

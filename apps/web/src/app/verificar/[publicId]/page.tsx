@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { use } from "react";
 import { BrandMark, Wordmark } from "@/components/brand";
+import { IconCheck, IconError } from "@/components/icons";
 import { Loading } from "@/components/ui";
 import { fmtDateTime } from "@/lib/format";
 
@@ -42,17 +43,22 @@ export default function VerifyPage({ params }: { params: Promise<{ publicId: str
         <div className="p-6">
           <div className="mb-4">
             <h1 className="font-semibold">Verificação de comprovante</h1>
-            <p className="text-xs text-zinc-500">Código {publicId}</p>
+            <p className="break-any text-xs text-zinc-500">Código {publicId}</p>
           </div>
           {isLoading && <Loading />}
-          {error && <p className="text-sm text-red-700">Não foi possível verificar agora.</p>}
+          {error && (
+            <p role="alert" className="text-sm text-red-700">
+              Não foi possível verificar agora.
+            </p>
+          )}
           {data && !data.found && <p className="rounded-lg bg-red-50 p-4 text-sm text-red-800">Comprovante não encontrado.</p>}
           {data?.found && (
             <div className="space-y-3 text-sm">
-              <div className={`rounded-lg p-4 font-medium ${data.valid ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-800"}`}>
-                {data.valid ? "✔ Comprovante autêntico e íntegro" : data.status === "CANCELLED" ? "✖ Entrega cancelada" : "✖ Integridade não confirmada"}
+              <div role="status" className={`flex items-center gap-2 rounded-lg p-4 font-medium ${data.valid ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-800"}`}>
+                {data.valid ? <IconCheck size={20} strokeWidth={2.4} className="text-emerald-600" /> : <IconError size={20} className="text-red-600" />}
+                {data.valid ? "Comprovante autêntico e íntegro" : data.status === "CANCELLED" ? "Entrega cancelada" : "Integridade não confirmada"}
               </div>
-              <dl className="grid grid-cols-3 gap-y-2">
+              <dl className="grid grid-cols-3 gap-x-3 gap-y-2 [&>dd]:[overflow-wrap:anywhere]">
                 <dt className="text-zinc-500">Documento</dt>
                 <dd className="col-span-2">{data.type}</dd>
                 <dt className="text-zinc-500">Empresa</dt>
@@ -68,7 +74,7 @@ export default function VerifyPage({ params }: { params: Promise<{ publicId: str
                 <dt className="text-zinc-500">Hash</dt>
                 <dd className="col-span-2 break-all font-mono text-xs">{data.hash}</dd>
               </dl>
-              <p className="text-xs text-zinc-400">Consulta em {fmtDateTime(data.checkedAt)}. Dados pessoais exibidos de forma reduzida (LGPD).</p>
+              <p className="text-xs text-zinc-500">Consulta em {fmtDateTime(data.checkedAt)}. Dados pessoais exibidos de forma reduzida (LGPD).</p>
             </div>
           )}
         </div>

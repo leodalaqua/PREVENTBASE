@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { type EmployeeLite, EmployeePicker, WarehouseSelect } from "@/components/pickers";
+import { IconPlus } from "@/components/icons";
 import { Badge, Button, Card, ErrorBox, Field, Input, Modal, PageHeader, Select, Table, Textarea, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -69,7 +70,7 @@ export default function ReturnsPage() {
 
   return (
     <>
-      <PageHeader title="Devoluções e higienização" actions={can("epi.return") && <Button onClick={() => setOpen(true)}>＋ Registrar devolução</Button>} />
+      <PageHeader title="Devoluções e higienização" actions={can("epi.return") && <Button onClick={() => setOpen(true)}><IconPlus size={18} />Registrar devolução</Button>} />
       <Card>
         <Table
           rows={data}

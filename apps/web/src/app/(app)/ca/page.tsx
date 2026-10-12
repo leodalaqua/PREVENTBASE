@@ -87,7 +87,7 @@ function CaContent() {
               <p className="rounded-lg bg-zinc-50 p-3 text-xs text-zinc-600">{data.note}</p>
               {data.products.length > 0 && <p className="text-sm">EPIs do catálogo com este CA: {data.products.map((p) => p.product.description).join(", ")}</p>}
               {data.history.length > 0 && <p className="text-xs text-zinc-500">Alterações registradas: {data.history.map((h) => `${fmtDate(h.changedAt)} (${h.changedFields.join(", ")})`).join("; ")}</p>}
-              <p className="text-xs text-zinc-400">Base atualizada em {fmtDateTime(data.lastSyncAt)}.</p>
+              <p className="text-xs text-zinc-500">Base atualizada em {fmtDateTime(data.lastSyncAt)}.</p>
             </div>
           )}
         </Card>

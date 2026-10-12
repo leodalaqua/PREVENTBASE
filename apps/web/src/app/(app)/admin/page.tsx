@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { CompanySelect, EpiPicker, type PickedVariant } from "@/components/pickers";
+import { IconPlus } from "@/components/icons";
 import { Badge, Button, Card, ErrorBox, Field, Input, Modal, PageHeader, Select, StatusBadge, Table, Tabs, Textarea, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -121,7 +122,7 @@ function Jobs() {
           </div>
         )}
       </Card>
-      <Card title={job ? `Matriz Função × EPI — ${job.name}` : "Matriz Função × EPI"} actions={job && manage && <Button onClick={() => setPicking(true)}>＋ EPI obrigatório</Button>}>
+      <Card title={job ? `Matriz Função × EPI — ${job.name}` : "Matriz Função × EPI"} actions={job && manage && <Button onClick={() => setPicking(true)}><IconPlus size={18} />EPI obrigatório</Button>}>
         {!job ? (
           <p className="text-sm text-zinc-500">Selecione uma função.</p>
         ) : (
@@ -192,7 +193,7 @@ function Users() {
   const create = useSave(() => api.post("/users", { name: f.name, email: f.email, password: f.password, roles: [{ roleKey: f.roleKey, companyId: f.companyId || null }] }), [["users"]], "Usuário criado", () => setOpen(false));
   const toggle = useSave((u: UserRow) => api.patch(`/users/${u.id}`, { status: u.status === "ACTIVE" ? "BLOCKED" : "ACTIVE" }), [["users"]], "Usuário atualizado");
   return (
-    <Card title="Usuários" actions={can("users.manage") && <Button onClick={() => setOpen(true)}>＋ Usuário</Button>}>
+    <Card title="Usuários" actions={can("users.manage") && <Button onClick={() => setOpen(true)}><IconPlus size={18} />Usuário</Button>}>
       <Table
         rows={data}
         rowKey={(u) => u.id}

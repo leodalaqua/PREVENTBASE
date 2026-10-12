@@ -74,7 +74,7 @@ function Results() {
           <Card title="Documentos">
             <ul className="divide-y divide-zinc-100">
               {data.documents.map((d) => (
-                <li key={d.id} className="py-2 text-sm">{d.title} <span className="text-zinc-400">({d.entityType})</span></li>
+                <li key={d.id} className="py-2 text-sm">{d.title} <span className="text-zinc-500">({d.entityType})</span></li>
               ))}
             </ul>
           </Card>

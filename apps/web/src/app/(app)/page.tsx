@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
+import { IconPlus } from "@/components/icons";
 import { Card, ErrorBox, LinkButton, Loading, PageHeader, Stat, Table } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -27,7 +28,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <PageHeader title="Painel SST" subtitle={me?.tenant.name} actions={can("epi.deliver") && <LinkButton href="/entregas/nova">＋ Nova entrega</LinkButton>} />
+      <PageHeader title="Painel SST" subtitle={me?.tenant.name} actions={can("epi.deliver") && <LinkButton href="/entregas/nova"><IconPlus size={18} />Nova entrega</LinkButton>} />
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Colaboradores ativos" value={c.activeEmployees} href="/colaboradores" />
         <Stat label="Com EPI pendente" value={c.employeesWithPending} tone={c.employeesWithPending ? "amber" : "green"} href="/relatorios?r=pending" />
@@ -38,19 +39,22 @@ export default function DashboardPage() {
         <Stat label="Lotes vencidos com saldo" value={c.lotsExpired} tone={c.lotsExpired ? "red" : "green"} href="/estoque?tab=alertas" />
         <Stat label="Alertas abertos" value={c.openAlerts} tone={c.openAlerts ? "amber" : "green"} href="/alertas" />
       </div>
-      <p className="mt-2 text-xs text-zinc-400">ASO, treinamentos, acidentes e divergências eSocial entram nas próximas fases (plano mestre §87).</p>
+      <p className="mt-2 text-xs text-zinc-500">ASO, treinamentos, acidentes e divergências eSocial entram nas próximas fases (plano mestre §87).</p>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Card title="Consumo de EPI — 12 meses">
           {data.monthly.length === 0 ? (
             <p className="text-sm text-zinc-500">Sem entregas no período.</p>
           ) : (
-            <div className="flex h-44 items-end gap-2">
+            <div className="tabular flex h-44 items-end gap-1 sm:gap-2">
               {data.monthly.map((m) => (
-                <div key={m.month} className="flex flex-1 flex-col items-center gap-1" title={`${m.quantity} un. · ${fmtMoney(m.cost)}`}>
-                  <span className="text-[10px] text-zinc-500">{m.quantity}</span>
+                <div key={m.month} className="flex min-w-0 flex-1 flex-col items-center gap-1" title={`${m.quantity} un. · ${fmtMoney(m.cost)}`}>
+                  <span className="text-[11px] text-zinc-600">{m.quantity}</span>
                   <div className="w-full rounded-t bg-brand-400" style={{ height: `${(m.quantity / max) * 120}px` }} />
-                  <span className="text-[10px] text-zinc-500">{m.month.slice(5)}/{m.month.slice(2, 4)}</span>
+                  <span className="whitespace-nowrap text-[11px] text-zinc-600">
+                    {m.month.slice(5)}
+                    <span className="hidden sm:inline">/{m.month.slice(2, 4)}</span>
+                  </span>
                 </div>
               ))}
             </div>

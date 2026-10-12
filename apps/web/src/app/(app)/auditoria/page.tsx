@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { Badge, Button, Card, ErrorBox, Input, Modal, PageHeader, Pager, Table } from "@/components/ui";
+import { Badge, Button, Card, ErrorBox, Input, Modal, Notice, PageHeader, Pager, Table } from "@/components/ui";
 import { api, qs } from "@/lib/api";
 import { fmtDateTime } from "@/lib/format";
 import type { Paged } from "@/lib/hooks";
@@ -21,8 +21,10 @@ export default function AuditPage() {
     <>
       <PageHeader title="Auditoria" subtitle="Trilha encadeada por hash SHA-256 — qualquer alteração quebra a cadeia" actions={<Button loading={verify.isPending} onClick={() => verify.mutate()}>Verificar integridade</Button>} />
       {verify.data && (
-        <div className={`mb-4 rounded-lg p-3 text-sm ${verify.data.ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-800"}`}>
-          {verify.data.ok ? `✔ Cadeia íntegra — ${verify.data.checked} registros verificados.` : `✖ Cadeia quebrada no registro ${verify.data.brokenAtId}: ${verify.data.reason}`}
+        <div role="status" className={`mb-4 rounded-lg border p-3 ${verify.data.ok ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"}`}>
+          <Notice tone={verify.data.ok ? "ok" : "error"}>
+            {verify.data.ok ? `Cadeia íntegra — ${verify.data.checked} registros verificados.` : `Cadeia quebrada no registro ${verify.data.brokenAtId}: ${verify.data.reason}`}
+          </Notice>
         </div>
       )}
       <ErrorBox error={verify.error} />

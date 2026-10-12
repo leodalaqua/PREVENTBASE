@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { EpiPicker, type PickedVariant, WarehouseSelect } from "@/components/pickers";
+import { IconPlus } from "@/components/icons";
 import { Badge, Button, Card, ErrorBox, Field, Input, Modal, PageHeader, Pager, Select, Table, Tabs, Textarea, useToast } from "@/components/ui";
 import { api, newIdempotencyKey, qs } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -167,7 +168,7 @@ function StockContent() {
       <PageHeader
         title="Estoque"
         subtitle="Saldo é consequência dos movimentos — FEFO por lote"
-        actions={can("inventory.entry") && <Button onClick={() => setEntry(true)}>＋ Entrada</Button>}
+        actions={can("inventory.entry") && <Button onClick={() => setEntry(true)}><IconPlus size={18} />Entrada</Button>}
       />
       <div className="mb-3 max-w-sm"><WarehouseSelect allowAll value={warehouseId} onChange={setWarehouseId} /></div>
       <Tabs value={tab} onChange={setTab} tabs={[{ id: "saldos", label: "Saldos por lote" }, { id: "movimentos", label: "Movimentos" }, { id: "alertas", label: "Alertas" }, { id: "minimos", label: "Mínimo / máximo" }]} />
@@ -180,7 +181,7 @@ function StockContent() {
             empty="Sem saldo."
             columns={[
               { key: "p", label: "EPI", render: (b) => <><span className="font-medium">{b.lot.variant.product.description}</span><p className="text-xs text-zinc-500">{b.lot.variant.sku}</p></> },
-              { key: "l", label: "Lote", render: (b) => <>{b.lot.lotNumber}<p className="font-mono text-xs text-zinc-400">{b.lot.publicCode}</p></> },
+              { key: "l", label: "Lote", render: (b) => <>{b.lot.lotNumber}<p className="font-mono text-xs text-zinc-500">{b.lot.publicCode}</p></> },
               { key: "ca", label: "CA", render: (b) => <>{b.lot.caNumber} {caBadge(b.lot.caValidAtPurchase)}</> },
               { key: "v", label: "Validade", render: (b) => <span className={b.lot.expiryDate && new Date(b.lot.expiryDate) < new Date() ? "font-medium text-red-700" : ""}>{fmtDate(b.lot.expiryDate)}</span> },
               { key: "w", label: "Local", render: (b) => `${b.warehouse.code}/${b.location.code}` },
@@ -243,7 +244,7 @@ function StockContent() {
       )}
 
       {tab === "minimos" && (
-        <Card title="Mínimo / máximo por almoxarifado" actions={can("inventory.adjust") && warehouseId && <Button onClick={() => setLevelOpen(true)}>＋ Definir</Button>}>
+        <Card title="Mínimo / máximo por almoxarifado" actions={can("inventory.adjust") && warehouseId && <Button onClick={() => setLevelOpen(true)}><IconPlus size={18} />Definir</Button>}>
           {!warehouseId && <p className="mb-2 text-sm text-zinc-500">Selecione um almoxarifado para definir níveis.</p>}
           <Table rows={levels} rowKey={(l) => l.id} empty="Nenhum nível definido." columns={[{ key: "p", label: "EPI", render: (l) => l.variant.product.description }, { key: "s", label: "SKU", render: (l) => l.variant.sku }, { key: "mi", label: "Mínimo", render: (l) => l.minQty }, { key: "ma", label: "Máximo", render: (l) => l.maxQty ?? "—" }]} />
         </Card>

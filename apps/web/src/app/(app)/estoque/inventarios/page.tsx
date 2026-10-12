@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { WarehouseSelect } from "@/components/pickers";
+import { IconPlus } from "@/components/icons";
 import { Button, Card, ErrorBox, Field, Modal, PageHeader, StatusBadge, Table, Textarea } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -33,7 +34,7 @@ export default function CountsPage() {
 
   return (
     <>
-      <PageHeader title="Inventários" subtitle="Contagem cega com snapshot, dupla contagem opcional e aprovação" actions={can("inventory.count") && <Button onClick={() => setOpen(true)}>＋ Abrir inventário</Button>} />
+      <PageHeader title="Inventários" subtitle="Contagem cega com snapshot, dupla contagem opcional e aprovação" actions={can("inventory.count") && <Button onClick={() => setOpen(true)}><IconPlus size={18} />Abrir inventário</Button>} />
       <Card>
         <Table
           rows={data}

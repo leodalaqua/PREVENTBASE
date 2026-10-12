@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { IconPlus } from "@/components/icons";
 import { Button, Card, ErrorBox, Field, Input, Modal, PageHeader, Pager, Select, StatusBadge, Table, Textarea, useToast } from "@/components/ui";
 import { api, qs } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
@@ -47,7 +48,7 @@ export default function EpisPage() {
 
   return (
     <>
-      <PageHeader title="EPIs" subtitle="Catálogo com CA, variações e orientações de uso" actions={can("epi.create") && <Button onClick={() => setOpen(true)}>＋ Novo EPI</Button>} />
+      <PageHeader title="EPIs" subtitle="Catálogo com CA, variações e orientações de uso" actions={can("epi.create") && <Button onClick={() => setOpen(true)}><IconPlus size={18} />Novo EPI</Button>} />
       <Card>
         <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Input placeholder="Descrição, código, CA, SKU ou EAN" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} className="sm:col-span-3" />
