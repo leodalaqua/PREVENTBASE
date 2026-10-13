@@ -15,7 +15,7 @@ Next.js 15 PWA (`apps/web`) · NestJS 11 modular monolith (`apps/api`) · worker
 | Módulo | Doc |
 |--------|-----|
 | Organização: empresas, estabelecimentos, setores, funções × EPI, colaboradores | [organizacao.md](organizacao.md) |
-| Identidade: login, refresh, MFA, perfis/permissões, escopo, dispositivos | [identidade.md](identidade.md) |
+| Identidade: login único Veritech (acesso só pela central), sessão, MFA do app, dispositivos | [identidade.md](identidade.md) |
 | EPI, variações, CA/CAEPI (válido na compra ≠ válido hoje) | [epi-ca.md](epi-ca.md) |
 | Estoque: almoxarifados, lotes, movimentos, FEFO, inventário, alertas | [estoque.md](estoque.md) |
 | Entrega, evidência (hash + PDF + QR), devolução, ficha, verificação pública | [entrega.md](entrega.md) |
@@ -36,19 +36,19 @@ Base CAEPI/MTE (download do arquivo oficial, `CAEPI_SOURCE_URL`) → [epi-ca.md]
 
 ## Dependências
 
-Robby: catálogo de portas/acessos (`C:\ROBBY\config\ports.json`, `magicdns.json`, `stack.json`), portal Veritech (aba tailnet HTTPS `:13100`; `frame-ancestors` no nginx) e leitura externa via pg-gateway (`preventbase_leitura`). `postgres` e `nginx` também em `robby_net`.
+Robby: login único Veritech (`:2922`, catálogo `C:\ROBBY\config\acessos-catalogo\preventbase.json`) decide todo acesso; catálogo de portas (`C:\ROBBY\config\ports.json`, `magicdns.json`, `stack.json`), portal Veritech (aba tailnet HTTPS `:13100`; `frame-ancestors` no nginx) e leitura externa via pg-gateway (`preventbase_leitura`). `postgres` e `nginx` também em `robby_net`.
 
 ## Arquivos principais
 
 | Path | Função |
 |------|--------|
-| `apps/api/src/core/` | Contexto (AsyncLocalStorage), guard JWT/permissões/dispositivo, auditoria, idempotência, storage, fila |
+| `apps/api/src/core/` | Contexto (AsyncLocalStorage), guard JWT/`@Acesso` (permissões da central)/dispositivo, auditoria, idempotência, storage, fila |
 | `apps/api/src/modules/` | Controllers/serviços por módulo (`/api/v1`, Swagger em `/api/v1/docs`) |
 | `apps/worker/src/` | Jobs agendados (alertas, cadeia, reconciliação, CAEPI) |
 | `apps/biometric-service/app/` | Detecção/embedding/prova de vida, templates cifrados |
 | `apps/web/src/app/` | UI (`(app)/*` autenticado, `login/`, `verificar/[publicId]` público) |
 | `packages/database/prisma/` | Schema, migrations (triggers de imutabilidade em `*_integrity`) |
-| `packages/contracts/` · `packages/permissions/` | Schemas Zod, labels, catálogo de permissões/perfis |
+| `packages/contracts/` · `packages/permissions/` | Schemas Zod, labels · espelho do catálogo de acesso da central + `pode()` |
 | `infrastructure/` | Dockerfile (targets api/worker/web), nginx, backup |
 | `scripts/e2e-smoke.ps1` | Smoke E2E isolado |
 
