@@ -3,8 +3,8 @@ import { normalizeCaNumber, paginationSchema } from "@preventbase/contracts";
 import { expiringLots, lowStock, Prisma, requirementStatus } from "@preventbase/database";
 import { z } from "zod";
 import { AuditService } from "../../core/audit.service.js";
-import { Public, RequirePermissions } from "../../core/auth.guard.js";
-import { authed, companyScope, DomainError } from "../../core/context.js";
+import { Public, Acesso } from "../../core/auth.guard.js";
+import { authed, DomainError } from "../../core/context.js";
 import { zod } from "../../core/http.js";
 import { PrismaService } from "../../core/prisma.service.js";
 import { QueueService } from "../../core/queue.service.js";
@@ -54,22 +54,21 @@ export class PlatformController {
   /* ---------- dashboard (§48/§49) ---------- */
 
   @Get("dashboard")
-  @RequirePermissions("employee.view")
+  @Acesso("inicio.painel.visualizar")
   async dashboard() {
-    const { tenantId, companyIds } = authed();
+    const { tenantId } = authed();
     const monthStart = new Date();
     monthStart.setUTCDate(1);
     monthStart.setUTCHours(3, 0, 0, 0);
-    const scope = companyScope();
     const [activeEmployees, pending, deliveredItems, low, expiring, openAlerts, recent, monthly] = await Promise.all([
-      this.prisma.employee.count({ where: { tenantId, status: "ACTIVE", ...scope } }),
-      requirementStatus(this.prisma, tenantId, { companyIds, onlyPending: true }),
-      this.prisma.epiDeliveryItem.aggregate({ where: { tenantId, delivery: { status: "ACTIVE", deliveredAt: { gte: monthStart }, ...scope } }, _sum: { quantity: true }, _count: true }),
+      this.prisma.employee.count({ where: { tenantId, status: "ACTIVE" } }),
+      requirementStatus(this.prisma, tenantId, { onlyPending: true }),
+      this.prisma.epiDeliveryItem.aggregate({ where: { tenantId, delivery: { status: "ACTIVE", deliveredAt: { gte: monthStart } } }, _sum: { quantity: true }, _count: true }),
       lowStock(this.prisma, tenantId),
       expiringLots(this.prisma, tenantId, 60),
       this.prisma.notification.count({ where: { tenantId, resolvedAt: null } }),
       this.prisma.epiDelivery.findMany({
-        where: { tenantId, ...scope },
+        where: { tenantId },
         include: { employee: { select: { name: true } }, items: { select: { productDescription: true, quantity: true } } },
         orderBy: { deliveredAt: "desc" },
         take: 8,
@@ -79,7 +78,6 @@ export class PlatformController {
                SUM(i.quantity)::int AS quantity, COALESCE(SUM(i.quantity * i."unitCost"), 0)::float AS cost
         FROM epi_delivery_items i JOIN epi_deliveries d ON d.id = i."deliveryId"
         WHERE i."tenantId" = ${tenantId}::uuid AND d.status = 'ACTIVE' AND d."deliveredAt" >= now() - interval '12 months'
-          ${companyIds ? Prisma.sql`AND d."companyId" = ANY(${companyIds}::uuid[])` : Prisma.empty}
         GROUP BY 1 ORDER BY 1`,
     ]);
     return {
@@ -109,7 +107,7 @@ export class PlatformController {
   /* ---------- busca global (§60) ---------- */
 
   @Get("search")
-  @RequirePermissions("employee.view")
+  @Acesso("inicio.busca.visualizar")
   async search(@Query("q") q = "") {
     const { tenantId } = authed();
     const term = q.trim();
@@ -118,7 +116,7 @@ export class PlatformController {
     const ca = normalizeCaNumber(term);
     const [employees, epis, lots, caMaster, documents] = await Promise.all([
       this.prisma.employee.findMany({
-        where: { tenantId, ...companyScope(), OR: [{ name: { contains: term, mode: "insensitive" } }, { registration: term }, ...(digits.length >= 4 ? [{ cpf: { contains: digits } }] : [])] },
+        where: { tenantId, OR: [{ name: { contains: term, mode: "insensitive" } }, { registration: term }, ...(digits.length >= 4 ? [{ cpf: { contains: digits } }] : [])] },
         select: { id: true, name: true, registration: true, status: true, job: { select: { name: true } } },
         take: 8,
       }),
@@ -141,7 +139,7 @@ export class PlatformController {
   /* ---------- alertas (§47) ---------- */
 
   @Get("notifications")
-  @RequirePermissions("employee.view")
+  @Acesso("inicio.painel.visualizar")
   notifications(@Query("all") all?: string) {
     const { tenantId } = authed();
     return this.prisma.notification.findMany({
@@ -153,7 +151,7 @@ export class PlatformController {
 
   @Post("notifications/:id/read")
   @HttpCode(204)
-  @RequirePermissions("employee.view")
+  @Acesso("inicio.painel.visualizar")
   async read(@Param("id") id: string) {
     const { tenantId } = authed();
     await this.prisma.notification.updateMany({ where: { id, tenantId, readAt: null }, data: { readAt: new Date() } });
@@ -162,7 +160,7 @@ export class PlatformController {
   /* ---------- auditoria (§51/§82) ---------- */
 
   @Get("audit")
-  @RequirePermissions("audit.view")
+  @Acesso("relatorios.auditoria.visualizar")
   async auditList(@Query(zod(auditQuery)) q: z.infer<typeof auditQuery>) {
     const { tenantId } = authed();
     const where = {
@@ -181,7 +179,7 @@ export class PlatformController {
   }
 
   @Get("audit/verify-chain")
-  @RequirePermissions("audit.view")
+  @Acesso("relatorios.auditoria.visualizar")
   verifyChain() {
     return this.audit.verifyChain(authed().tenantId);
   }
@@ -189,13 +187,13 @@ export class PlatformController {
   /* ---------- LGPD (§57) ---------- */
 
   @Get("lgpd/processing-records")
-  @RequirePermissions("audit.view")
+  @Acesso("administracao.lgpd.visualizar")
   lgpd() {
     return this.prisma.dataProcessingRecord.findMany({ where: { tenantId: authed().tenantId }, orderBy: { createdAt: "asc" } });
   }
 
   @Get("settings/tenant")
-  @RequirePermissions("settings.manage")
+  @Acesso("administracao.parametros.visualizar")
   tenantSettings() {
     return this.prisma.tenant.findUniqueOrThrow({ where: { id: authed().tenantId }, select: { id: true, name: true, settings: true } });
   }

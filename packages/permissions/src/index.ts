@@ -1,140 +1,61 @@
-export const PERMISSIONS = {
-  "tenant.manage": "Administrar tenant e empresas",
-  "organization.view": "Ver estrutura organizacional",
-  "organization.manage": "Gerenciar empresas, estabelecimentos, setores e funções",
-  "users.view": "Ver usuários",
-  "users.manage": "Gerenciar usuários e perfis",
-  "devices.view": "Ver dispositivos",
-  "devices.manage": "Aprovar/bloquear dispositivos",
-  "employee.view": "Ver colaboradores",
-  "employee.create": "Cadastrar colaboradores",
-  "employee.update": "Alterar colaboradores",
-  "epi.view": "Ver catálogo de EPI",
-  "epi.create": "Cadastrar/alterar EPI",
-  "epi.deliver": "Entregar EPI",
-  "epi.return": "Registrar devolução de EPI",
-  "epi.cancel_delivery": "Cancelar entrega de EPI",
-  "ca.view": "Consultar CA",
-  "ca.sync": "Sincronizar/importar base CAEPI",
-  "inventory.view": "Ver estoque",
-  "inventory.entry": "Registrar entrada de estoque",
-  "inventory.transfer": "Transferir estoque",
-  "inventory.adjust": "Ajustar estoque (perda, descarte, ajuste)",
-  "inventory.count": "Contar inventário",
-  "inventory.approve": "Aprovar inventário",
-  "biometric.enroll": "Cadastrar biometria",
-  "biometric.verify": "Executar verificação biométrica",
-  "biometric.revoke": "Revogar biometria",
-  "documents.view": "Ver documentos",
-  "documents.upload": "Enviar documentos",
-  "reports.view": "Ver e exportar relatórios",
-  "health.view_summary": "Ver aptidão (APTO/INAPTO/RESTRIÇÃO)",
-  "health.view_medical": "Ver dados clínicos",
-  "esocial.view": "Ver eventos eSocial",
-  "esocial.import": "Importar eventos eSocial",
-  "audit.view": "Ver auditoria",
-  "settings.manage": "Gerenciar parâmetros (motivos, termos)",
+/**
+ * Acesso só pela central Veritech (login único) — contrato: C:\ROBBY\docs\robby\sso-veritech.md.
+ * Espelho do catálogo C:\ROBBY\config\acessos-catalogo\preventbase.json (mudou um, muda o outro).
+ */
+export const CATALOGO = {
+  inicio: ["painel", "busca"],
+  colaboradores: ["cadastro", "biometria"],
+  entregas: ["entregas", "devolucoes"],
+  epi: ["catalogo", "ca", "integracao_caepi"],
+  estoque: ["saldos", "inventarios"],
+  documentos: ["anexos"],
+  relatorios: ["relatorios", "auditoria"],
+  administracao: ["organizacao", "funcoes_epi", "almoxarifados", "dispositivos", "parametros", "lgpd"],
 } as const;
 
-export type PermissionKey = keyof typeof PERMISSIONS;
+export const ACOES = ["visualizar", "inserir", "alterar", "atualizar", "excluir", "enviar"] as const;
+export type Acao = (typeof ACOES)[number];
 
-export const ALL_PERMISSIONS = Object.keys(PERMISSIONS) as PermissionKey[];
+type Catalogo = typeof CATALOGO;
+export type Modulo = keyof Catalogo;
+export type Tela = { [M in Modulo]: `${M}.${Catalogo[M][number]}` }[Modulo];
+/** `modulo.submodulo.acao`; `*` = qualquer tela com visualizar (dados de apoio usados por várias telas). */
+export type ChaveAcesso = `${Tela}.${Acao}` | "*";
 
-const VIEW_BASE: PermissionKey[] = [
-  "organization.view",
-  "employee.view",
-  "epi.view",
-  "ca.view",
-  "inventory.view",
-  "documents.view",
-];
+/** Árvore `modulo → submodulo → {acao: boolean}` devolvida pela central. */
+export type Permissoes = Record<string, Record<string, Partial<Record<Acao, boolean>>>>;
 
-export const SYSTEM_ROLES: Record<string, { name: string; permissions: PermissionKey[] }> = {
-  super_admin: { name: "Super Admin", permissions: ALL_PERMISSIONS },
-  company_admin: {
-    name: "Administrador Empresa",
-    permissions: ALL_PERMISSIONS.filter((p) => p !== "tenant.manage" && p !== "health.view_medical"),
-  },
-  sst_technician: {
-    name: "Técnico SST",
-    permissions: [
-      ...VIEW_BASE,
-      "employee.create",
-      "employee.update",
-      "epi.create",
-      "epi.deliver",
-      "epi.return",
-      "ca.sync",
-      "inventory.entry",
-      "inventory.transfer",
-      "inventory.count",
-      "biometric.enroll",
-      "biometric.verify",
-      "documents.upload",
-      "reports.view",
-      "health.view_summary",
-      "esocial.view",
-      "devices.view",
-    ],
-  },
-  sst_engineer: {
-    name: "Engenheiro SST",
-    permissions: [
-      ...VIEW_BASE,
-      "employee.update",
-      "epi.create",
-      "epi.deliver",
-      "epi.return",
-      "epi.cancel_delivery",
-      "ca.sync",
-      "inventory.entry",
-      "inventory.transfer",
-      "inventory.adjust",
-      "inventory.count",
-      "inventory.approve",
-      "biometric.enroll",
-      "biometric.verify",
-      "biometric.revoke",
-      "documents.upload",
-      "reports.view",
-      "health.view_summary",
-      "esocial.view",
-      "esocial.import",
-      "audit.view",
-      "settings.manage",
-      "devices.view",
-    ],
-  },
-  physician: {
-    name: "Médico",
-    permissions: ["employee.view", "organization.view", "documents.view", "documents.upload", "health.view_summary", "health.view_medical", "reports.view"],
-  },
-  hr: {
-    name: "RH",
-    permissions: [...VIEW_BASE, "employee.create", "employee.update", "epi.deliver", "biometric.enroll", "biometric.verify", "documents.upload", "reports.view", "health.view_summary"],
-  },
-  leader: {
-    name: "Líder",
-    permissions: ["organization.view", "employee.view", "epi.view", "ca.view", "inventory.view", "epi.deliver", "biometric.verify", "health.view_summary"],
-  },
-  storekeeper: {
-    name: "Almoxarife",
-    permissions: [
-      ...VIEW_BASE,
-      "epi.create",
-      "epi.deliver",
-      "epi.return",
-      "inventory.entry",
-      "inventory.transfer",
-      "inventory.adjust",
-      "inventory.count",
-      "biometric.verify",
-      "reports.view",
-    ],
-  },
-  auditor: {
-    name: "Auditor",
-    permissions: [...VIEW_BASE, "reports.view", "audit.view", "esocial.view", "users.view", "devices.view"],
-  },
-  viewer: { name: "Consulta", permissions: VIEW_BASE },
-};
+export interface Acesso {
+  isAdmin: boolean;
+  permissoes: Permissoes;
+}
+
+export const SEM_ACESSO: Acesso = { isAdmin: false, permissoes: {} };
+
+const isObj = (v: unknown): v is Record<string, unknown> => !!v && typeof v === "object" && !Array.isArray(v);
+
+/** Mantém só `true` explícitos com ids no formato do catálogo. */
+export function normalizarPermissoes(raw: unknown): Permissoes {
+  const out: Permissoes = {};
+  if (!isObj(raw)) return out;
+  for (const [mod, subs] of Object.entries(raw)) {
+    if (!/^[a-z0-9_]{1,60}$/.test(mod) || !isObj(subs)) continue;
+    for (const [sub, acoes] of Object.entries(subs)) {
+      if (!/^[a-z0-9_]{1,60}$/.test(sub) || !isObj(acoes)) continue;
+      const ok: Partial<Record<Acao, boolean>> = {};
+      for (const a of ACOES) if (acoes[a] === true) ok[a] = true;
+      if (Object.keys(ok).length) (out[mod] ??= {})[sub] = ok;
+    }
+  }
+  return out;
+}
+
+export function pode(acesso: Acesso | null | undefined, ...chaves: ChaveAcesso[]): boolean {
+  if (!acesso) return false;
+  if (acesso.isAdmin) return true;
+  return chaves.some((chave) => {
+    if (chave === "*") return Object.values(acesso.permissoes).some((subs) => Object.values(subs).some((a) => a.visualizar === true));
+    const [mod, sub, acao] = chave.split(".") as [string, string, Acao];
+    return acesso.permissoes[mod]?.[sub]?.[acao] === true;
+  });
+}

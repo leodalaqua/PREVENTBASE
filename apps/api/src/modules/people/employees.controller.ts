@@ -3,8 +3,8 @@ import { employeeCreateSchema, employeeStatus, employeeUpdateSchema, paginationS
 import { type Prisma, requirementStatus } from "@preventbase/database";
 import { z } from "zod";
 import { AuditService } from "../../core/audit.service.js";
-import { RequirePermissions } from "../../core/auth.guard.js";
-import { assertCompanyAccess, authed, companyScope, DomainError, notFound } from "../../core/context.js";
+import { Acesso } from "../../core/auth.guard.js";
+import { authed, DomainError, notFound } from "../../core/context.js";
 import { zod } from "../../core/http.js";
 import { PrismaService } from "../../core/prisma.service.js";
 
@@ -34,13 +34,12 @@ export class EmployeesController {
   ) {}
 
   @Get()
-  @RequirePermissions("employee.view")
+  @Acesso("colaboradores.cadastro.visualizar", "entregas.entregas.inserir", "entregas.devolucoes.inserir")
   async list(@Query(zod(listSchema)) q: z.infer<typeof listSchema>) {
     const { tenantId } = authed();
     const digits = q.q?.replace(/\D/g, "") ?? "";
     const where: Prisma.EmployeeWhereInput = {
       tenantId,
-      ...companyScope(),
       ...(q.companyId ? { companyId: q.companyId } : {}),
       ...(q.establishmentId ? { establishmentId: q.establishmentId } : {}),
       ...(q.departmentId ? { departmentId: q.departmentId } : {}),
@@ -67,12 +66,11 @@ export class EmployeesController {
     const { tenantId } = authed();
     const e = await this.prisma.employee.findFirst({ where: { id, tenantId }, include: employeeInclude });
     if (!e) throw notFound("Colaborador");
-    assertCompanyAccess(e.companyId);
     return e;
   }
 
   @Get(":id")
-  @RequirePermissions("employee.view")
+  @Acesso("colaboradores.cadastro.visualizar", "entregas.entregas.inserir", "entregas.devolucoes.inserir")
   get(@Param("id") id: string) {
     return this.load(id);
   }
@@ -93,10 +91,9 @@ export class EmployeesController {
   }
 
   @Post()
-  @RequirePermissions("employee.create")
+  @Acesso("colaboradores.cadastro.inserir")
   async create(@Body(zod(employeeCreateSchema)) body: z.infer<typeof employeeCreateSchema>) {
     const { tenantId } = authed();
-    assertCompanyAccess(body.companyId);
     await this.validateRefs(tenantId, body.companyId, body);
     const dup = await this.prisma.employee.findUnique({ where: { tenantId_cpf: { tenantId, cpf: body.cpf } } });
     if (dup) throw new DomainError(409, "CPF_DUPLICATE", "Já existe colaborador com este CPF", { id: dup.id });
@@ -127,7 +124,7 @@ export class EmployeesController {
   }
 
   @Patch(":id")
-  @RequirePermissions("employee.update")
+  @Acesso("colaboradores.cadastro.alterar")
   async update(@Param("id") id: string, @Body(zod(employeeUpdateSchema)) body: z.infer<typeof employeeUpdateSchema>) {
     const { tenantId, userId } = authed();
     const before = await this.load(id);
@@ -168,7 +165,7 @@ export class EmployeesController {
 
   /** Aba SST (§7): obrigatórios × entregues, pendências, biometria. */
   @Get(":id/sst")
-  @RequirePermissions("employee.view")
+  @Acesso("colaboradores.cadastro.visualizar", "entregas.entregas.inserir", "entregas.devolucoes.inserir")
   async sst(@Param("id") id: string) {
     const { tenantId } = authed();
     const employee = await this.load(id);
@@ -213,7 +210,7 @@ export class EmployeesController {
   }
 
   @Get(":id/timeline")
-  @RequirePermissions("employee.view")
+  @Acesso("colaboradores.cadastro.visualizar")
   async timeline(@Param("id") id: string) {
     const { tenantId } = authed();
     await this.load(id);

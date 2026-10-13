@@ -5,7 +5,7 @@ import { documentMetaSchema } from "@preventbase/contracts";
 import type { Response } from "express";
 import type { z } from "zod";
 import { AuditService } from "../../core/audit.service.js";
-import { RequirePermissions } from "../../core/auth.guard.js";
+import { Acesso } from "../../core/auth.guard.js";
 import { authed, DomainError, notFound } from "../../core/context.js";
 import { zod } from "../../core/http.js";
 import { PrismaService } from "../../core/prisma.service.js";
@@ -28,7 +28,7 @@ export class DocumentsController {
   ) {}
 
   @Get()
-  @RequirePermissions("documents.view")
+  @Acesso("documentos.anexos.visualizar")
   list(@Query("entityType") entityType?: string, @Query("entityId") entityId?: string) {
     const { tenantId } = authed();
     return this.prisma.document.findMany({
@@ -47,7 +47,7 @@ export class DocumentsController {
   }
 
   @Post()
-  @RequirePermissions("documents.upload")
+  @Acesso("documentos.anexos.inserir")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX } }))
   async upload(@UploadedFile() upload: Express.Multer.File | undefined, @Body(zod(documentMetaSchema)) meta: z.infer<typeof documentMetaSchema>) {
     const { tenantId, userId } = authed();
@@ -68,7 +68,7 @@ export class DocumentsController {
   }
 
   @Post(":id/versions")
-  @RequirePermissions("documents.upload")
+  @Acesso("documentos.anexos.inserir")
   @UseInterceptors(FileInterceptor("file", { limits: { fileSize: MAX } }))
   async newVersion(@Param("id") id: string, @UploadedFile() upload?: Express.Multer.File) {
     const { tenantId, userId } = authed();
@@ -90,7 +90,7 @@ export class DocumentsController {
   }
 
   @Get(":id/versions/:version/download")
-  @RequirePermissions("documents.view")
+  @Acesso("documentos.anexos.visualizar")
   async download(@Param("id") id: string, @Param("version") version: string, @Res() res: Response) {
     const { tenantId } = authed();
     const doc = await this.prisma.document.findFirst({ where: { id, tenantId } });

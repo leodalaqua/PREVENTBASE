@@ -25,32 +25,19 @@ export type Pagination = z.infer<typeof paginationSchema>;
 
 /* ---------- identity ---------- */
 
-export const loginSchema = z.object({
-  email: z.string().trim().toLowerCase().email(),
-  password: z.string().min(1),
-  mfaCode: z.string().trim().optional(),
-});
+/** "Usar conta local": CPF/e-mail + senha Veritech; ou código 2FA da central (ssoMfaToken); ou TOTP do app (mfaToken). */
+export const loginSchema = z
+  .object({
+    login: z.string().trim().min(3).max(200).optional(),
+    senha: z.string().min(1).max(500).optional(),
+    ssoMfaToken: z.string().trim().min(1).max(200).optional(),
+    codigo: z.string().trim().max(10).optional(),
+    mfaToken: z.string().trim().min(1).max(100).optional(),
+    mfaCode: z.string().trim().max(10).optional(),
+  })
+  .refine((b) => (b.login && b.senha) || b.ssoMfaToken || b.mfaToken, { message: "Informe CPF ou e-mail e a senha Veritech" });
 
 export const refreshSchema = z.object({ refreshToken: z.string().min(20) });
-
-export const userCreateSchema = z.object({
-  name: z.string().trim().min(2).max(200),
-  email: z.string().trim().toLowerCase().email(),
-  password: z.string().min(10, "Mínimo 10 caracteres"),
-  roles: z
-    .array(z.object({ roleKey: z.string(), companyId: optionalUuid, establishmentId: optionalUuid }))
-    .min(1),
-  employeeId: optionalUuid,
-});
-
-export const userUpdateSchema = z.object({
-  name: z.string().trim().min(2).max(200).optional(),
-  status: z.enum(["ACTIVE", "BLOCKED"]).optional(),
-  password: z.string().min(10).optional(),
-  roles: z
-    .array(z.object({ roleKey: z.string(), companyId: optionalUuid, establishmentId: optionalUuid }))
-    .optional(),
-});
 
 export const deviceRegisterSchema = z.object({
   deviceKey: z.string().min(16).max(200),

@@ -11,7 +11,7 @@ import {
 import { Prisma, requirementStatus, type StockLot } from "@preventbase/database";
 import type { z } from "zod";
 import { AuditService, toJson } from "../../core/audit.service.js";
-import { assertCompanyAccess, authed, ctx, DomainError, notFound } from "../../core/context.js";
+import { authed, ctx, DomainError, notFound } from "../../core/context.js";
 import { PrismaService } from "../../core/prisma.service.js";
 import { StockService } from "../inventory/stock.service.js";
 
@@ -69,10 +69,8 @@ export class DeliveryService {
       include: { job: { select: { id: true, name: true } }, department: { select: { id: true, name: true } }, company: { select: { id: true, legalName: true, tradeName: true } } },
     });
     if (!employee) throw notFound("Colaborador");
-    assertCompanyAccess(employee.companyId);
     const warehouse = await db.warehouse.findFirst({ where: { id: input.warehouseId, tenantId } });
     if (!warehouse) throw notFound("Almoxarifado");
-    assertCompanyAccess(warehouse.companyId);
 
     const globalErrors: string[] = [];
     if (employee.status !== "ACTIVE") globalErrors.push("Colaborador não está ativo");
@@ -404,7 +402,6 @@ export class DeliveryService {
     const c = authed();
     const delivery = await this.prisma.epiDelivery.findFirst({ where: { id, tenantId: c.tenantId }, include: { items: true } });
     if (!delivery) throw notFound("Entrega");
-    assertCompanyAccess(delivery.companyId);
     if (delivery.status === "CANCELLED") throw new DomainError(409, "ALREADY_CANCELLED", "Entrega já cancelada");
     return this.prisma.$transaction(async (tx) => {
       const updated = await tx.epiDelivery.update({
@@ -437,7 +434,6 @@ export class DeliveryService {
       include: { items: true, evidence: true, employee: { select: { id: true, name: true, cpf: true, registration: true, companyId: true } } },
     });
     if (!d) throw notFound("Entrega");
-    assertCompanyAccess(d.companyId);
     const [manager, warehouse, company] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: d.managerUserId }, select: { id: true, name: true, email: true } }),
       this.prisma.warehouse.findUnique({ where: { id: d.warehouseId }, select: { id: true, name: true } }),

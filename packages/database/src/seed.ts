@@ -1,38 +1,15 @@
 import { createHash } from "node:crypto";
-import bcrypt from "bcryptjs";
 import type { PrismaClient } from "@prisma/client";
 import { DEFAULT_DELIVERY_REASONS, DEFAULT_TERMS_TEXT } from "@preventbase/contracts";
-import { PERMISSIONS, SYSTEM_ROLES } from "@preventbase/permissions";
 
 export interface SeedOptions {
   tenantName: string;
-  adminEmail: string;
-  adminPassword?: string;
   log?: (msg: string) => void;
 }
 
-/** Idempotente: pode rodar a cada deploy. Só cria admin/tenant se não existirem. */
+/** Idempotente: pode rodar a cada deploy. Só cria o tenant se não existir. Usuários vêm do login único Veritech. */
 export async function runSeed(prisma: PrismaClient, opts: SeedOptions): Promise<void> {
   const log = opts.log ?? (() => undefined);
-
-  for (const [key, description] of Object.entries(PERMISSIONS)) {
-    await prisma.permission.upsert({ where: { key }, update: { description }, create: { key, description } });
-  }
-  const permissions = await prisma.permission.findMany();
-  const permId = new Map(permissions.map((p) => [p.key, p.id]));
-
-  for (const [key, def] of Object.entries(SYSTEM_ROLES)) {
-    let role = await prisma.role.findFirst({ where: { tenantId: null, key } });
-    if (!role) role = await prisma.role.create({ data: { key, name: def.name, system: true } });
-    else if (role.name !== def.name) role = await prisma.role.update({ where: { id: role.id }, data: { name: def.name } });
-    const roleId = role.id;
-    await prisma.rolePermission.deleteMany({ where: { roleId } });
-    await prisma.rolePermission.createMany({
-      data: def.permissions.map((p) => ({ roleId, permissionId: permId.get(p)! })),
-      skipDuplicates: true,
-    });
-  }
-  log(`permissões: ${permissions.length}; perfis: ${Object.keys(SYSTEM_ROLES).length}`);
 
   let tenant = await prisma.tenant.findFirst({ orderBy: { createdAt: "asc" } });
   if (!tenant) {
@@ -103,24 +80,6 @@ export async function runSeed(prisma: PrismaClient, opts: SeedOptions): Promise<
     });
   }
 
-  const adminExists = await prisma.user.findUnique({ where: { email: opts.adminEmail.toLowerCase() } });
-  if (!adminExists) {
-    if (!opts.adminPassword || opts.adminPassword.length < 10) {
-      log("SEED_ADMIN_PASSWORD ausente ou < 10 caracteres: admin não criado");
-      return;
-    }
-    const superRole = await prisma.role.findFirstOrThrow({ where: { tenantId: null, key: "super_admin" } });
-    await prisma.user.create({
-      data: {
-        tenantId,
-        email: opts.adminEmail.toLowerCase(),
-        name: "Administrador",
-        passwordHash: await bcrypt.hash(opts.adminPassword, 12),
-        roles: { create: [{ roleId: superRole.id }] },
-      },
-    });
-    log(`admin criado: ${opts.adminEmail}`);
-  }
 }
 
 function sha256(text: string): string {

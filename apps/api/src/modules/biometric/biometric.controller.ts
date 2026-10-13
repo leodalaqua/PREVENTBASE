@@ -1,10 +1,11 @@
 import { Body, Controller, Delete, Get, Param, Post } from "@nestjs/common";
 import { biometricChallengeSchema, biometricEnrollSchema, biometricFramesSchema, cancelSchema } from "@preventbase/contracts";
+import { pode } from "@preventbase/permissions";
 import type { z } from "zod";
 import { config } from "../../config.js";
 import { AuditService } from "../../core/audit.service.js";
-import { RequirePermissions, RequireTrustedDevice } from "../../core/auth.guard.js";
-import { assertCompanyAccess, authed, DomainError, notFound } from "../../core/context.js";
+import { Acesso, RequireTrustedDevice } from "../../core/auth.guard.js";
+import { authed, DomainError, notFound } from "../../core/context.js";
 import { log, zod } from "../../core/http.js";
 import { PrismaService } from "../../core/prisma.service.js";
 
@@ -72,13 +73,12 @@ export class BiometricController {
     const { tenantId } = authed();
     const e = await this.prisma.employee.findFirst({ where: { id, tenantId } });
     if (!e) throw notFound("Colaborador");
-    assertCompanyAccess(e.companyId);
     if (e.status !== "ACTIVE") throw new DomainError(422, "EMPLOYEE_INACTIVE", "Colaborador não está ativo");
     return e;
   }
 
   @Get("profiles/:employeeId")
-  @RequirePermissions("employee.view")
+  @Acesso("colaboradores.cadastro.visualizar", "colaboradores.biometria.visualizar", "entregas.entregas.inserir")
   async profile(@Param("employeeId") employeeId: string) {
     const { tenantId } = authed();
     const profiles = await this.prisma.biometricProfile.findMany({
@@ -91,18 +91,20 @@ export class BiometricController {
 
   /** Desafio de prova de vida de uso único (anti-replay). */
   @Post("challenge")
-  @RequirePermissions("biometric.verify")
+  @Acesso("colaboradores.biometria.inserir", "entregas.entregas.inserir")
   @RequireTrustedDevice()
   async challenge(@Body(zod(biometricChallengeSchema)) body: z.infer<typeof biometricChallengeSchema>) {
-    const { tenantId, permissions } = authed();
-    if (body.purpose === "ENROLL" && !permissions.has("biometric.enroll")) throw new DomainError(403, "FORBIDDEN", "Permissão necessária: biometric.enroll");
+    const { tenantId, acesso } = authed();
+    if (!pode(acesso, body.purpose === "ENROLL" ? "colaboradores.biometria.inserir" : "entregas.entregas.inserir")) {
+      throw new DomainError(403, "FORBIDDEN", "Sem permissão para esta ação no login único Veritech");
+    }
     await this.employee(body.employeeId);
     const r = await bio<ChallengeResponse>("POST", "/v1/challenges", { subject_ref: body.employeeId, tenant_ref: tenantId, purpose: body.purpose });
     return { challengeId: r.challenge_id, action: r.action, instruction: r.instruction, frameCount: r.frame_count, expiresAt: r.expires_at };
   }
 
   @Post("enroll")
-  @RequirePermissions("biometric.enroll")
+  @Acesso("colaboradores.biometria.inserir")
   @RequireTrustedDevice()
   async enroll(@Body(zod(biometricEnrollSchema)) body: z.infer<typeof biometricEnrollSchema>) {
     const c = authed();
@@ -132,7 +134,7 @@ export class BiometricController {
 
   /** Verificação 1:1 + liveness. O resultado (não a imagem) é registrado e consumido uma única vez pela entrega. */
   @Post("verify")
-  @RequirePermissions("biometric.verify")
+  @Acesso("entregas.entregas.inserir")
   @RequireTrustedDevice()
   async verify(@Body(zod(biometricFramesSchema)) body: z.infer<typeof biometricFramesSchema>) {
     const c = authed();
@@ -168,7 +170,7 @@ export class BiometricController {
   }
 
   @Delete("profiles/:employeeId")
-  @RequirePermissions("biometric.revoke")
+  @Acesso("colaboradores.biometria.excluir")
   async revoke(@Param("employeeId") employeeId: string, @Body(zod(cancelSchema)) body: z.infer<typeof cancelSchema>) {
     const c = authed();
     const profile = await this.prisma.biometricProfile.findFirst({ where: { tenantId: c.tenantId, employeeId, status: "ACTIVE" } });

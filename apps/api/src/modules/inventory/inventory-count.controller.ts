@@ -2,8 +2,8 @@ import { Body, Controller, Get, Param, Post, Put } from "@nestjs/common";
 import { cancelSchema, inventoryCountCreateSchema, inventoryCountItemsSchema } from "@preventbase/contracts";
 import type { z } from "zod";
 import { AuditService } from "../../core/audit.service.js";
-import { RequirePermissions } from "../../core/auth.guard.js";
-import { assertCompanyAccess, authed, DomainError, notFound } from "../../core/context.js";
+import { Acesso } from "../../core/auth.guard.js";
+import { authed, DomainError, notFound } from "../../core/context.js";
 import { zod } from "../../core/http.js";
 import { PrismaService } from "../../core/prisma.service.js";
 import { StockService } from "./stock.service.js";
@@ -25,14 +25,14 @@ export class InventoryCountController {
   }
 
   @Get()
-  @RequirePermissions("inventory.view")
+  @Acesso("estoque.inventarios.visualizar")
   list() {
     const { tenantId } = authed();
     return this.prisma.inventoryCount.findMany({ where: { tenantId }, orderBy: { createdAt: "desc" }, include: { _count: { select: { items: true } } }, take: 100 });
   }
 
   @Get(":id")
-  @RequirePermissions("inventory.view")
+  @Acesso("estoque.inventarios.visualizar")
   async get(@Param("id") id: string) {
     const count = await this.load(id);
     const lots = await this.prisma.stockLot.findMany({
@@ -55,12 +55,11 @@ export class InventoryCountController {
   }
 
   @Post()
-  @RequirePermissions("inventory.count")
+  @Acesso("estoque.inventarios.inserir")
   async create(@Body(zod(inventoryCountCreateSchema)) body: z.infer<typeof inventoryCountCreateSchema>) {
     const { tenantId, userId } = authed();
     const wh = await this.prisma.warehouse.findFirst({ where: { id: body.warehouseId, tenantId } });
     if (!wh) throw notFound("Almoxarifado");
-    assertCompanyAccess(wh.companyId);
     const open = await this.prisma.inventoryCount.findFirst({ where: { warehouseId: wh.id, status: { in: ["OPEN", "COUNTING", "DIVERGENT", "APPROVED"] } } });
     if (open) throw new DomainError(409, "COUNT_OPEN", "Já existe inventário em andamento neste almoxarifado", { id: open.id });
     return this.prisma.$transaction(async (tx) => {
@@ -72,7 +71,7 @@ export class InventoryCountController {
 
   /** Congela o saldo do sistema (snapshot) e libera a contagem. */
   @Post(":id/start")
-  @RequirePermissions("inventory.count")
+  @Acesso("estoque.inventarios.inserir")
   async start(@Param("id") id: string) {
     const count = await this.load(id);
     if (count.status !== "OPEN") throw new DomainError(409, "STATUS", "Inventário não está aberto");
@@ -86,7 +85,7 @@ export class InventoryCountController {
   }
 
   @Put(":id/items")
-  @RequirePermissions("inventory.count")
+  @Acesso("estoque.inventarios.inserir")
   async count(@Param("id") id: string, @Body(zod(inventoryCountItemsSchema)) body: z.infer<typeof inventoryCountItemsSchema>) {
     const { userId } = authed();
     const count = await this.load(id);
@@ -111,7 +110,7 @@ export class InventoryCountController {
 
   /** Fecha a contagem: calcula finalQty. Contagens 1 e 2 diferentes → continua COUNTING (recontar); senão DIVERGENT (conferência p/ aprovação). */
   @Post(":id/submit")
-  @RequirePermissions("inventory.count")
+  @Acesso("estoque.inventarios.inserir")
   async submit(@Param("id") id: string) {
     const count = await this.load(id);
     if (!["COUNTING", "DIVERGENT"].includes(count.status)) throw new DomainError(409, "STATUS", "Inventário não está em contagem");
@@ -130,7 +129,7 @@ export class InventoryCountController {
 
   /** Aprovação gera INVENTORY_IN/OUT pela diferença contada × saldo atual (movimentos durante a contagem são respeitados). */
   @Post(":id/approve")
-  @RequirePermissions("inventory.approve")
+  @Acesso("estoque.inventarios.atualizar")
   async approve(@Param("id") id: string) {
     const { tenantId, userId } = authed();
     const count = await this.load(id);
@@ -165,7 +164,7 @@ export class InventoryCountController {
   }
 
   @Post(":id/close")
-  @RequirePermissions("inventory.approve")
+  @Acesso("estoque.inventarios.atualizar")
   async close(@Param("id") id: string) {
     const count = await this.load(id);
     if (count.status !== "APPROVED") throw new DomainError(409, "STATUS", "Somente inventário aprovado pode ser encerrado");
@@ -177,7 +176,7 @@ export class InventoryCountController {
   }
 
   @Post(":id/cancel")
-  @RequirePermissions("inventory.approve")
+  @Acesso("estoque.inventarios.excluir")
   async cancel(@Param("id") id: string, @Body(zod(cancelSchema)) body: z.infer<typeof cancelSchema>) {
     const count = await this.load(id);
     if (["APPROVED", "CLOSED", "CANCELLED"].includes(count.status)) throw new DomainError(409, "STATUS", "Inventário não pode ser cancelado");

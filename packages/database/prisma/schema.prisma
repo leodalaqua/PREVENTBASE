@@ -193,10 +193,13 @@ enum UserStatus {
   BLOCKED
 }
 
+/// Espelho do usuário da central Veritech (FK de auditoria/autoria), sincronizado no login único.
+/// Acesso e senha ficam só na central: passwordHash é aleatório e sem uso.
 model User {
   id           String     @id @default(uuid()) @db.Uuid
   tenantId     String     @db.Uuid
   email        String     @unique
+  cpf          String?    @unique
   name         String
   passwordHash String
   status       UserStatus @default(ACTIVE)
@@ -210,7 +213,7 @@ model User {
   roles    UserRole[]
   sessions Session[]
 
-  /// Handle WebAuthn aleatório (base64url) — padrão C:\ROBBY\docs\decisions\2026-10-09-login-passkey.md
+  /// Legado (passkey local removida; biometria de login só na central).
   webauthnUserHandle String?              @unique
   passkeys           WebauthnCredential[]
 
@@ -218,7 +221,7 @@ model User {
   @@map("users")
 }
 
-/// Passkey (biometria do aparelho) para login sem senha.
+/// Legado: passkey local removida (biometria de login só na central).
 model WebauthnCredential {
   id           String    @id @default(uuid()) @db.Uuid
   userId       String    @db.Uuid
@@ -236,6 +239,7 @@ model WebauthnCredential {
   @@map("webauthn_credentials")
 }
 
+/// Legado: perfis/permissões locais sem uso (acesso só pela central Veritech). Tabelas mantidas por histórico.
 model Role {
   id          String   @id @default(uuid()) @db.Uuid
   tenantId    String?  @db.Uuid
@@ -302,6 +306,11 @@ model Session {
   revokedReason    String?
   /// Sessão central do login único Veritech (C:\ROBBY\docs\robby\sso-veritech.md); conferida no refresh.
   ssoSid           String?
+  /// isAdmin/permissoes da central (redeem ou /sso/check na renovação): única fonte de autorização.
+  ssoIsAdmin       Boolean   @default(false)
+  ssoPermissoes    Json?
+  /// Entrou com segundo fator na central (dispensou o TOTP do app).
+  ssoMfa           Boolean   @default(false)
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

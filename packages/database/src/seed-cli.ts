@@ -4,8 +4,6 @@ import { runSeed } from "./seed.js";
 const prisma = createPrismaClient();
 runSeed(prisma, {
   tenantName: process.env.SEED_TENANT_NAME ?? "PreventBase",
-  adminEmail: process.env.SEED_ADMIN_EMAIL ?? "admin@preventbase.local",
-  adminPassword: process.env.SEED_ADMIN_PASSWORD,
   log: (m) => console.log(`[seed] ${m}`),
 })
   .then(() => prisma.$disconnect())

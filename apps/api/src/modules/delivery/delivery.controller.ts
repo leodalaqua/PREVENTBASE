@@ -4,8 +4,8 @@ import type { Prisma } from "@preventbase/database";
 import type { Response } from "express";
 import { z } from "zod";
 import { config } from "../../config.js";
-import { RequirePermissions, RequireTrustedDevice } from "../../core/auth.guard.js";
-import { assertCompanyAccess, authed, companyScope, notFound } from "../../core/context.js";
+import { Acesso, RequireTrustedDevice } from "../../core/auth.guard.js";
+import { authed, notFound } from "../../core/context.js";
 import { zod } from "../../core/http.js";
 import { PrismaService } from "../../core/prisma.service.js";
 import { fmtDate, fmtDateTime, renderTable } from "../reporting/export.js";
@@ -34,25 +34,24 @@ export class DeliveryController {
   ) {}
 
   @Post("deliveries/prepare")
-  @RequirePermissions("epi.deliver")
+  @Acesso("entregas.entregas.inserir")
   prepare(@Body(zod(deliveryPrepareSchema)) body: z.infer<typeof deliveryPrepareSchema>) {
     return this.deliveries.prepare(this.prisma, body);
   }
 
   @Post("deliveries")
-  @RequirePermissions("epi.deliver")
+  @Acesso("entregas.entregas.inserir")
   @RequireTrustedDevice()
   create(@Body(zod(deliveryCreateSchema)) body: z.infer<typeof deliveryCreateSchema>, @Headers("idempotency-key") key?: string) {
     return this.deliveries.create(body, key);
   }
 
   @Get("deliveries")
-  @RequirePermissions("epi.view")
+  @Acesso("entregas.entregas.visualizar")
   async list(@Query(zod(listSchema)) q: z.infer<typeof listSchema>) {
     const { tenantId } = authed();
     const where: Prisma.EpiDeliveryWhereInput = {
       tenantId,
-      ...companyScope(),
       ...(q.employeeId ? { employeeId: q.employeeId } : {}),
       ...(q.companyId ? { companyId: q.companyId } : {}),
       ...(q.status ? { status: q.status } : {}),
@@ -75,19 +74,19 @@ export class DeliveryController {
   }
 
   @Get("deliveries/:id")
-  @RequirePermissions("epi.view")
+  @Acesso("entregas.entregas.visualizar")
   get(@Param("id") id: string) {
     return this.deliveries.get(id);
   }
 
   @Post("deliveries/:id/cancel")
-  @RequirePermissions("epi.cancel_delivery")
+  @Acesso("entregas.entregas.excluir")
   cancel(@Param("id") id: string, @Body(zod(cancelSchema)) body: z.infer<typeof cancelSchema>) {
     return this.deliveries.cancel(id, body.reason);
   }
 
   @Get("deliveries/:id/pdf")
-  @RequirePermissions("epi.view")
+  @Acesso("entregas.entregas.visualizar")
   async pdf(@Param("id") id: string, @Res() res: Response) {
     const d = await this.deliveries.get(id);
     const terms = d.evidence ? await this.prisma.deliveryTerms.findFirst({ where: { tenantId: d.tenantId, version: d.evidence.termsVersion } }) : null;
@@ -110,7 +109,7 @@ export class DeliveryController {
 
   /** Ficha eletrônica de EPI (§12) — PDF/XLSX/CSV ou JSON. */
   @Get("employees/:id/epi-sheet")
-  @RequirePermissions("employee.view")
+  @Acesso("colaboradores.cadastro.visualizar", "entregas.entregas.visualizar")
   async sheet(@Param("id") id: string, @Query("format") format: string | undefined, @Res() res: Response) {
     const { tenantId } = authed();
     const employee = await this.prisma.employee.findFirst({
@@ -118,7 +117,6 @@ export class DeliveryController {
       include: { company: true, job: { select: { name: true } }, department: { select: { name: true } } },
     });
     if (!employee) throw notFound("Colaborador");
-    assertCompanyAccess(employee.companyId);
     const items = await this.prisma.epiDeliveryItem.findMany({
       where: { tenantId, employeeId: id },
       include: { delivery: { select: { deliveredAt: true, status: true, publicId: true, managerUserId: true, evidence: { select: { verificationMethod: true, hash: true } } } } },

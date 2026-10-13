@@ -2,8 +2,8 @@ import { Body, Controller, Delete, Get, HttpCode, Param, Patch, Post, Put, Query
 import { companySchema, departmentSchema, establishmentSchema, jobRequirementSchema, jobSchema, unitSchema } from "@preventbase/contracts";
 import { z } from "zod";
 import { AuditService } from "../../core/audit.service.js";
-import { RequirePermissions } from "../../core/auth.guard.js";
-import { assertCompanyAccess, authed, companyScope, notFound } from "../../core/context.js";
+import { Acesso } from "../../core/auth.guard.js";
+import { authed, notFound } from "../../core/context.js";
 import { zod } from "../../core/http.js";
 import { PrismaService } from "../../core/prisma.service.js";
 
@@ -19,14 +19,14 @@ export class OrganizationController {
   /* ---------- companies ---------- */
 
   @Get("companies")
-  @RequirePermissions("organization.view")
+  @Acesso("*")
   companies() {
     const { tenantId } = authed();
-    return this.prisma.company.findMany({ where: { tenantId, ...companyScope("id") }, orderBy: { legalName: "asc" } });
+    return this.prisma.company.findMany({ where: { tenantId }, orderBy: { legalName: "asc" } });
   }
 
   @Post("companies")
-  @RequirePermissions("organization.manage")
+  @Acesso("administracao.organizacao.inserir")
   createCompany(@Body(zod(companySchema)) body: z.infer<typeof companySchema>) {
     const { tenantId } = authed();
     return this.prisma.$transaction(async (tx) => {
@@ -37,12 +37,11 @@ export class OrganizationController {
   }
 
   @Patch("companies/:id")
-  @RequirePermissions("organization.manage")
+  @Acesso("administracao.organizacao.alterar")
   async updateCompany(@Param("id") id: string, @Body(zod(companySchema.partial().merge(activeSchema.partial()))) body: Record<string, unknown>) {
     const { tenantId } = authed();
     const before = await this.prisma.company.findFirst({ where: { id, tenantId } });
     if (!before) throw notFound("Empresa");
-    assertCompanyAccess(id);
     return this.prisma.$transaction(async (tx) => {
       const company = await tx.company.update({ where: { id }, data: body });
       await this.audit.record(tx, { action: "company.updated", entityType: "Company", entityId: id, before, after: company });
@@ -53,23 +52,22 @@ export class OrganizationController {
   /* ---------- establishments / units / departments ---------- */
 
   @Get("establishments")
-  @RequirePermissions("organization.view")
+  @Acesso("*")
   establishments(@Query("companyId") companyId?: string) {
     const { tenantId } = authed();
     return this.prisma.establishment.findMany({
-      where: { tenantId, ...companyScope(), ...(companyId ? { companyId } : {}) },
+      where: { tenantId, ...(companyId ? { companyId } : {}) },
       include: { company: { select: { tradeName: true, legalName: true } } },
       orderBy: { name: "asc" },
     });
   }
 
   @Post("establishments")
-  @RequirePermissions("organization.manage")
+  @Acesso("administracao.organizacao.inserir")
   async createEstablishment(@Body(zod(establishmentSchema)) body: z.infer<typeof establishmentSchema>) {
     const { tenantId } = authed();
     const company = await this.prisma.company.findFirst({ where: { id: body.companyId, tenantId } });
     if (!company) throw notFound("Empresa");
-    assertCompanyAccess(company.id);
     return this.prisma.$transaction(async (tx) => {
       const est = await tx.establishment.create({ data: { tenantId, ...body } });
       await this.audit.record(tx, { action: "establishment.created", entityType: "Establishment", entityId: est.id, after: est });
@@ -78,12 +76,11 @@ export class OrganizationController {
   }
 
   @Patch("establishments/:id")
-  @RequirePermissions("organization.manage")
+  @Acesso("administracao.organizacao.alterar")
   async updateEstablishment(@Param("id") id: string, @Body(zod(establishmentSchema.omit({ companyId: true }).partial().merge(activeSchema.partial()))) body: Record<string, unknown>) {
     const { tenantId } = authed();
     const before = await this.prisma.establishment.findFirst({ where: { id, tenantId } });
     if (!before) throw notFound("Estabelecimento");
-    assertCompanyAccess(before.companyId);
     return this.prisma.$transaction(async (tx) => {
       const est = await tx.establishment.update({ where: { id }, data: body });
       await this.audit.record(tx, { action: "establishment.updated", entityType: "Establishment", entityId: id, before, after: est });
@@ -92,19 +89,18 @@ export class OrganizationController {
   }
 
   @Get("units")
-  @RequirePermissions("organization.view")
+  @Acesso("*")
   units(@Query("establishmentId") establishmentId?: string) {
     const { tenantId } = authed();
-    return this.prisma.unit.findMany({ where: { tenantId, ...companyScope(), ...(establishmentId ? { establishmentId } : {}) }, orderBy: { name: "asc" } });
+    return this.prisma.unit.findMany({ where: { tenantId, ...(establishmentId ? { establishmentId } : {}) }, orderBy: { name: "asc" } });
   }
 
   @Post("units")
-  @RequirePermissions("organization.manage")
+  @Acesso("administracao.organizacao.inserir")
   async createUnit(@Body(zod(unitSchema)) body: z.infer<typeof unitSchema>) {
     const { tenantId } = authed();
     const est = await this.prisma.establishment.findFirst({ where: { id: body.establishmentId, tenantId } });
     if (!est) throw notFound("Estabelecimento");
-    assertCompanyAccess(est.companyId);
     return this.prisma.$transaction(async (tx) => {
       const unit = await tx.unit.create({ data: { tenantId, companyId: est.companyId, ...body } });
       await this.audit.record(tx, { action: "unit.created", entityType: "Unit", entityId: unit.id, after: unit });
@@ -113,23 +109,22 @@ export class OrganizationController {
   }
 
   @Get("departments")
-  @RequirePermissions("organization.view")
+  @Acesso("*")
   departments(@Query("establishmentId") establishmentId?: string, @Query("companyId") companyId?: string) {
     const { tenantId } = authed();
     return this.prisma.department.findMany({
-      where: { tenantId, ...companyScope(), ...(establishmentId ? { establishmentId } : {}), ...(companyId ? { companyId } : {}) },
+      where: { tenantId, ...(establishmentId ? { establishmentId } : {}), ...(companyId ? { companyId } : {}) },
       include: { establishment: { select: { name: true } } },
       orderBy: { name: "asc" },
     });
   }
 
   @Post("departments")
-  @RequirePermissions("organization.manage")
+  @Acesso("administracao.organizacao.inserir")
   async createDepartment(@Body(zod(departmentSchema)) body: z.infer<typeof departmentSchema>) {
     const { tenantId } = authed();
     const est = await this.prisma.establishment.findFirst({ where: { id: body.establishmentId, tenantId } });
     if (!est) throw notFound("Estabelecimento");
-    assertCompanyAccess(est.companyId);
     return this.prisma.$transaction(async (tx) => {
       const dep = await tx.department.create({ data: { tenantId, companyId: est.companyId, ...body } });
       await this.audit.record(tx, { action: "department.created", entityType: "Department", entityId: dep.id, after: dep });
@@ -138,12 +133,11 @@ export class OrganizationController {
   }
 
   @Patch("departments/:id")
-  @RequirePermissions("organization.manage")
+  @Acesso("administracao.organizacao.alterar")
   async updateDepartment(@Param("id") id: string, @Body(zod(departmentSchema.omit({ establishmentId: true }).partial().merge(activeSchema.partial()))) body: Record<string, unknown>) {
     const { tenantId } = authed();
     const before = await this.prisma.department.findFirst({ where: { id, tenantId } });
     if (!before) throw notFound("Setor");
-    assertCompanyAccess(before.companyId);
     return this.prisma.$transaction(async (tx) => {
       const dep = await tx.department.update({ where: { id }, data: body });
       await this.audit.record(tx, { action: "department.updated", entityType: "Department", entityId: id, before, after: dep });
@@ -154,23 +148,22 @@ export class OrganizationController {
   /* ---------- jobs (funções) + matriz Função × EPI ---------- */
 
   @Get("jobs")
-  @RequirePermissions("organization.view")
+  @Acesso("*")
   jobs(@Query("companyId") companyId?: string) {
     const { tenantId } = authed();
     return this.prisma.job.findMany({
-      where: { tenantId, ...companyScope(), ...(companyId ? { companyId } : {}) },
+      where: { tenantId, ...(companyId ? { companyId } : {}) },
       include: { _count: { select: { employees: true, epiRequirements: { where: { active: true } } } } },
       orderBy: { name: "asc" },
     });
   }
 
   @Post("jobs")
-  @RequirePermissions("organization.manage")
+  @Acesso("administracao.funcoes_epi.inserir")
   async createJob(@Body(zod(jobSchema)) body: z.infer<typeof jobSchema>) {
     const { tenantId } = authed();
     const company = await this.prisma.company.findFirst({ where: { id: body.companyId, tenantId } });
     if (!company) throw notFound("Empresa");
-    assertCompanyAccess(company.id);
     return this.prisma.$transaction(async (tx) => {
       const job = await tx.job.create({ data: { tenantId, ...body } });
       await this.audit.record(tx, { action: "job.created", entityType: "Job", entityId: job.id, after: job });
@@ -179,12 +172,11 @@ export class OrganizationController {
   }
 
   @Patch("jobs/:id")
-  @RequirePermissions("organization.manage")
+  @Acesso("administracao.funcoes_epi.alterar")
   async updateJob(@Param("id") id: string, @Body(zod(jobSchema.omit({ companyId: true }).partial().merge(activeSchema.partial()))) body: Record<string, unknown>) {
     const { tenantId } = authed();
     const before = await this.prisma.job.findFirst({ where: { id, tenantId } });
     if (!before) throw notFound("Função");
-    assertCompanyAccess(before.companyId);
     return this.prisma.$transaction(async (tx) => {
       const job = await tx.job.update({ where: { id }, data: body });
       await this.audit.record(tx, { action: "job.updated", entityType: "Job", entityId: id, before, after: job });
@@ -193,7 +185,7 @@ export class OrganizationController {
   }
 
   @Get("jobs/:id/epi-requirements")
-  @RequirePermissions("organization.view")
+  @Acesso("administracao.funcoes_epi.visualizar")
   async requirements(@Param("id") id: string) {
     const { tenantId } = authed();
     return this.prisma.epiJobRequirement.findMany({
@@ -204,7 +196,7 @@ export class OrganizationController {
   }
 
   @Put("jobs/:id/epi-requirements")
-  @RequirePermissions("organization.manage")
+  @Acesso("administracao.funcoes_epi.alterar")
   async upsertRequirement(@Param("id") id: string, @Body(zod(jobRequirementSchema)) body: z.infer<typeof jobRequirementSchema>) {
     const { tenantId } = authed();
     const job = await this.prisma.job.findFirst({ where: { id, tenantId } });
@@ -224,7 +216,7 @@ export class OrganizationController {
   }
 
   @Delete("jobs/:id/epi-requirements/:productId")
-  @RequirePermissions("organization.manage")
+  @Acesso("administracao.funcoes_epi.excluir")
   @HttpCode(204)
   async removeRequirement(@Param("id") id: string, @Param("productId") productId: string) {
     const { tenantId } = authed();

@@ -6,7 +6,7 @@ import { CaepiBusyError, CaepiFileError, syncCaepiFile } from "@preventbase/caep
 import { normalizeCaNumber, startOfUtcDay } from "@preventbase/contracts";
 import { config } from "../../config.js";
 import { AuditService } from "../../core/audit.service.js";
-import { RequirePermissions } from "../../core/auth.guard.js";
+import { Acesso } from "../../core/auth.guard.js";
 import { authed, DomainError } from "../../core/context.js";
 import { PrismaService } from "../../core/prisma.service.js";
 import { QueueService } from "../../core/queue.service.js";
@@ -20,14 +20,14 @@ export class CaController {
   ) {}
 
   @Get("syncs")
-  @RequirePermissions("ca.view")
+  @Acesso("epi.integracao_caepi.visualizar")
   syncs() {
     return this.prisma.caSync.findMany({ orderBy: { startedAt: "desc" }, take: 20 });
   }
 
   /** Consulta CA (§18): dados oficiais + última sincronização + EPIs do tenant que usam o CA. */
   @Get(":number")
-  @RequirePermissions("ca.view")
+  @Acesso("epi.ca.visualizar")
   async lookup(@Param("number") number: string) {
     const { tenantId } = authed();
     const caNumber = normalizeCaNumber(number);
@@ -52,7 +52,7 @@ export class CaController {
   }
 
   @Post("sync")
-  @RequirePermissions("ca.sync")
+  @Acesso("epi.integracao_caepi.atualizar")
   @HttpCode(202)
   async sync() {
     if (!config.caepiSourceUrl) throw new DomainError(422, "CAEPI_URL", "CAEPI_SOURCE_URL não configurada — use a importação manual do arquivo");
@@ -64,7 +64,7 @@ export class CaController {
 
   /** Importação manual do tgg_export_caepi (.zip ou .txt) baixado do MTE. */
   @Post("import")
-  @RequirePermissions("ca.sync")
+  @Acesso("epi.integracao_caepi.atualizar")
   @UseInterceptors(FileInterceptor("file", { dest: tmpdir(), limits: { fileSize: 200 * 1024 * 1024 } }))
   async import(@UploadedFile() file?: Express.Multer.File) {
     if (!file) throw new DomainError(400, "FILE_REQUIRED", "Envie o arquivo da base CAEPI (.zip ou .txt)");

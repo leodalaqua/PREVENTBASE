@@ -35,7 +35,7 @@ export class AuthController {
   @Post("login")
   @HttpCode(200)
   login(@Body(zod(loginSchema)) body: z.infer<typeof loginSchema>) {
-    return this.auth.login(body.email, body.password, body.mfaCode);
+    return this.auth.login(body);
   }
 
   @Public()

@@ -13,8 +13,8 @@ import {
 import { expiringLots, lowStock, type MovementType, type Prisma } from "@preventbase/database";
 import { z } from "zod";
 import { AuditService } from "../../core/audit.service.js";
-import { RequirePermissions } from "../../core/auth.guard.js";
-import { assertCompanyAccess, authed, companyScope, DomainError, notFound } from "../../core/context.js";
+import { Acesso } from "../../core/auth.guard.js";
+import { authed, DomainError, notFound } from "../../core/context.js";
 import { zod } from "../../core/http.js";
 import { IdempotencyService } from "../../core/idempotency.service.js";
 import { PrismaService } from "../../core/prisma.service.js";
@@ -53,23 +53,22 @@ export class StockController {
   /* ---------- almoxarifados (§27) ---------- */
 
   @Get("warehouses")
-  @RequirePermissions("inventory.view")
+  @Acesso("*")
   warehouses() {
     const { tenantId } = authed();
     return this.prisma.warehouse.findMany({
-      where: { tenantId, ...companyScope() },
+      where: { tenantId },
       include: { establishment: { select: { name: true } }, locations: { where: { active: true }, orderBy: { code: "asc" } } },
       orderBy: { name: "asc" },
     });
   }
 
   @Post("warehouses")
-  @RequirePermissions("organization.manage")
+  @Acesso("administracao.almoxarifados.inserir")
   async createWarehouse(@Body(zod(warehouseSchema)) body: z.infer<typeof warehouseSchema>) {
     const { tenantId } = authed();
     const est = await this.prisma.establishment.findFirst({ where: { id: body.establishmentId, tenantId } });
     if (!est) throw notFound("Estabelecimento");
-    assertCompanyAccess(est.companyId);
     return this.prisma.$transaction(async (tx) => {
       const wh = await tx.warehouse.create({
         data: { tenantId, companyId: est.companyId, ...body, locations: { create: [{ tenantId, code: "GERAL", description: "Localização padrão", isDefault: true }] } },
@@ -81,7 +80,7 @@ export class StockController {
   }
 
   @Post("warehouses/:id/locations")
-  @RequirePermissions("organization.manage")
+  @Acesso("administracao.almoxarifados.inserir")
   async createLocation(@Param("id") id: string, @Body(zod(locationSchema)) body: z.infer<typeof locationSchema>) {
     const { tenantId } = authed();
     const wh = await this.prisma.warehouse.findFirst({ where: { id, tenantId } });
@@ -96,7 +95,7 @@ export class StockController {
   /* ---------- entrada (§14, §19) ---------- */
 
   @Post("entries")
-  @RequirePermissions("inventory.entry")
+  @Acesso("estoque.saldos.inserir")
   entry(@Body(zod(stockEntrySchema)) body: z.infer<typeof stockEntrySchema>, @Headers("idempotency-key") key?: string) {
     return this.idem.run("stock.entry", key, body, () => this.doEntry(body));
   }
@@ -107,7 +106,6 @@ export class StockController {
     if (!variant) throw notFound("Variação de EPI");
     const wh = await this.prisma.warehouse.findFirst({ where: { id: body.warehouseId, tenantId } });
     if (!wh) throw notFound("Almoxarifado");
-    assertCompanyAccess(wh.companyId);
 
     const caNumber = normalizeCaNumber(body.caNumber);
     const purchaseDate = date(body.purchaseDate)!;
@@ -164,13 +162,12 @@ export class StockController {
   /* ---------- consultas ---------- */
 
   @Get("lots")
-  @RequirePermissions("inventory.view")
+  @Acesso("estoque.saldos.visualizar", "entregas.entregas.inserir")
   lots(@Query("variantId") variantId?: string, @Query("q") q?: string) {
     const { tenantId } = authed();
     return this.prisma.stockLot.findMany({
       where: {
         tenantId,
-        ...companyScope(),
         ...(variantId ? { variantId } : {}),
         ...(q ? { OR: [{ lotNumber: { contains: q, mode: "insensitive" } }, { publicCode: q.toUpperCase() }, { caNumber: normalizeCaNumber(q) || "-" }] } : {}),
       },
@@ -181,7 +178,7 @@ export class StockController {
   }
 
   @Get("balances")
-  @RequirePermissions("inventory.view")
+  @Acesso("estoque.saldos.visualizar")
   balances(@Query(zod(balancesQuery)) q: z.infer<typeof balancesQuery>) {
     const { tenantId } = authed();
     return this.prisma.stockBalance.findMany({
@@ -189,7 +186,6 @@ export class StockController {
         tenantId,
         ...(q.onlyPositive ? { quantity: { gt: 0 } } : {}),
         ...(q.warehouseId ? { warehouseId: q.warehouseId } : {}),
-        warehouse: companyScope(),
         lot: { ...(q.variantId ? { variantId: q.variantId } : {}), ...(q.productId ? { productId: q.productId } : {}) },
       },
       include: {
@@ -203,7 +199,7 @@ export class StockController {
   }
 
   @Get("fefo")
-  @RequirePermissions("inventory.view")
+  @Acesso("estoque.saldos.visualizar", "entregas.entregas.inserir")
   async fefo(@Query("warehouseId") warehouseId: string, @Query("variantId") variantId: string, @Query("quantity") quantity?: string) {
     const { tenantId } = authed();
     if (!warehouseId || !variantId) throw new DomainError(400, "PARAMS", "warehouseId e variantId são obrigatórios");
@@ -212,12 +208,11 @@ export class StockController {
   }
 
   @Get("movements")
-  @RequirePermissions("inventory.view")
+  @Acesso("estoque.saldos.visualizar")
   async movements(@Query(zod(movementsQuery)) q: z.infer<typeof movementsQuery>) {
     const { tenantId } = authed();
     const where: Prisma.StockMovementWhereInput = {
       tenantId,
-      ...companyScope(),
       ...(q.warehouseId ? { warehouseId: q.warehouseId } : {}),
       ...(q.lotId ? { lotId: q.lotId } : {}),
       ...(q.type ? { type: q.type as MovementType } : {}),
@@ -252,7 +247,7 @@ export class StockController {
   /* ---------- transferência / ajuste ---------- */
 
   @Post("transfers")
-  @RequirePermissions("inventory.transfer")
+  @Acesso("estoque.saldos.inserir")
   transfer(@Body(zod(stockTransferSchema)) body: z.infer<typeof stockTransferSchema>, @Headers("idempotency-key") key?: string) {
     return this.idem.run("stock.transfer", key, body, async () => {
       const { tenantId, userId } = authed();
@@ -262,8 +257,6 @@ export class StockController {
         this.prisma.warehouse.findFirst({ where: { id: body.toWarehouseId, tenantId } }),
       ]);
       if (!from || !to) throw notFound("Almoxarifado");
-      assertCompanyAccess(from.companyId);
-      assertCompanyAccess(to.companyId);
       return this.prisma.$transaction(async (tx) => {
         const transfer = await tx.stockTransfer.create({ data: { tenantId, fromWarehouseId: from.id, toWarehouseId: to.id, notes: body.notes ?? null, createdById: userId } });
         const toLocation = body.toLocationId ?? (await this.stock.defaultLocation(tx, tenantId, to.id));
@@ -280,13 +273,12 @@ export class StockController {
   }
 
   @Post("adjustments")
-  @RequirePermissions("inventory.adjust")
+  @Acesso("estoque.saldos.alterar")
   adjust(@Body(zod(stockAdjustmentSchema)) body: z.infer<typeof stockAdjustmentSchema>, @Headers("idempotency-key") key?: string) {
     return this.idem.run("stock.adjustment", key, body, async () => {
       const { tenantId } = authed();
       const wh = await this.prisma.warehouse.findFirst({ where: { id: body.warehouseId, tenantId } });
       if (!wh) throw notFound("Almoxarifado");
-      assertCompanyAccess(wh.companyId);
       const sign = body.type === "ADJUSTMENT_IN" ? 1 : -1;
       return this.prisma.$transaction(async (tx) => {
         const locationId =
@@ -302,7 +294,7 @@ export class StockController {
   /* ---------- mínimo/máximo e alertas (§16) ---------- */
 
   @Get("levels")
-  @RequirePermissions("inventory.view")
+  @Acesso("estoque.saldos.visualizar")
   levels(@Query("warehouseId") warehouseId?: string) {
     const { tenantId } = authed();
     return this.prisma.stockLevel.findMany({
@@ -312,7 +304,7 @@ export class StockController {
   }
 
   @Post("levels")
-  @RequirePermissions("inventory.adjust")
+  @Acesso("estoque.saldos.alterar")
   setLevel(@Body(zod(stockLevelSchema)) body: z.infer<typeof stockLevelSchema>) {
     const { tenantId } = authed();
     return this.prisma.$transaction(async (tx) => {
@@ -327,7 +319,7 @@ export class StockController {
   }
 
   @Get("alerts")
-  @RequirePermissions("inventory.view")
+  @Acesso("estoque.saldos.visualizar")
   async alerts(@Query("days") days?: string) {
     const { tenantId } = authed();
     const tenant = await this.prisma.tenant.findUniqueOrThrow({ where: { id: tenantId } });
@@ -337,7 +329,7 @@ export class StockController {
   }
 
   @Patch("lots/:id")
-  @RequirePermissions("inventory.adjust")
+  @Acesso("estoque.saldos.alterar")
   async updateLot(@Param("id") id: string, @Body(zod(z.object({ supplier: z.string().max(200).nullable().optional(), invoiceNumber: z.string().max(60).nullable().optional() }))) body: { supplier?: string | null; invoiceNumber?: string | null }) {
     const { tenantId } = authed();
     const before = await this.prisma.stockLot.findFirst({ where: { id, tenantId } });

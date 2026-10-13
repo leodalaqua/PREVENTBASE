@@ -3,8 +3,8 @@ import { MOVEMENT_LABELS, reportQuerySchema } from "@preventbase/contracts";
 import { expiringLots, type Prisma, requirementStatus } from "@preventbase/database";
 import type { Response } from "express";
 import type { z } from "zod";
-import { RequirePermissions } from "../../core/auth.guard.js";
-import { authed, companyScope } from "../../core/context.js";
+import { Acesso } from "../../core/auth.guard.js";
+import { authed } from "../../core/context.js";
 import { zod } from "../../core/http.js";
 import { PrismaService } from "../../core/prisma.service.js";
 import { sendFile } from "../delivery/delivery.controller.js";
@@ -38,7 +38,6 @@ export class ReportsController {
       tenantId,
       delivery: {
         status: "ACTIVE",
-        ...companyScope(),
         ...(q.companyId ? { companyId: q.companyId } : {}),
         ...(q.establishmentId ? { establishmentId: q.establishmentId } : {}),
         ...(q.departmentId ? { departmentId: q.departmentId } : {}),
@@ -49,7 +48,7 @@ export class ReportsController {
   }
 
   @Get("deliveries")
-  @RequirePermissions("reports.view")
+  @Acesso("relatorios.relatorios.visualizar")
   async deliveries(@Query(zod(reportQuerySchema)) q: Q, @Res() res: Response) {
     const items = await this.prisma.epiDeliveryItem.findMany({
       where: this.deliveryWhere(q),
@@ -91,7 +90,7 @@ export class ReportsController {
 
   /** Consumo/custo agrupado (§24): por colaborador, setor, função, EPI ou gestor. */
   @Get("consumption")
-  @RequirePermissions("reports.view")
+  @Acesso("relatorios.relatorios.visualizar")
   async consumption(@Query(zod(reportQuerySchema)) q: Q, @Res() res: Response) {
     const groupBy = q.groupBy ?? "employee";
     const items = await this.prisma.epiDeliveryItem.findMany({
@@ -130,11 +129,11 @@ export class ReportsController {
   }
 
   @Get("stock")
-  @RequirePermissions("reports.view")
+  @Acesso("relatorios.relatorios.visualizar")
   async stock(@Query(zod(reportQuerySchema)) q: Q, @Res() res: Response) {
     const { tenantId } = authed();
     const balances = await this.prisma.stockBalance.findMany({
-      where: { tenantId, quantity: { gt: 0 }, warehouse: companyScope() },
+      where: { tenantId, quantity: { gt: 0 } },
       include: { warehouse: { select: { name: true } }, location: { select: { code: true } }, lot: { include: { variant: { include: { product: { select: { description: true } } } } } } },
       orderBy: [{ lot: { expiryDate: "asc" } }],
     });
@@ -165,11 +164,11 @@ export class ReportsController {
   }
 
   @Get("movements")
-  @RequirePermissions("reports.view")
+  @Acesso("relatorios.relatorios.visualizar")
   async movements(@Query(zod(reportQuerySchema)) q: Q, @Res() res: Response) {
     const { tenantId } = authed();
     const moves = await this.prisma.stockMovement.findMany({
-      where: { tenantId, ...companyScope(), ...(q.from || q.to ? { createdAt: period(q) } : {}) },
+      where: { tenantId, ...(q.from || q.to ? { createdAt: period(q) } : {}) },
       orderBy: { createdAt: "desc" },
       take: 20000,
     });
@@ -199,7 +198,7 @@ export class ReportsController {
   }
 
   @Get("expiring-lots")
-  @RequirePermissions("reports.view")
+  @Acesso("relatorios.relatorios.visualizar")
   async expiring(@Query(zod(reportQuerySchema)) q: Q, @Res() res: Response) {
     const rows = await expiringLots(this.prisma, authed().tenantId, 90);
     return this.out(res, q, "Lotes vencidos e a vencer (90 dias)", "lotes-validade", [
@@ -215,9 +214,9 @@ export class ReportsController {
   }
 
   @Get("pending")
-  @RequirePermissions("reports.view")
+  @Acesso("relatorios.relatorios.visualizar")
   async pending(@Query(zod(reportQuerySchema)) q: Q, @Res() res: Response) {
-    const rows = await requirementStatus(this.prisma, authed().tenantId, { companyIds: authed().companyIds, onlyPending: true });
+    const rows = await requirementStatus(this.prisma, authed().tenantId, { onlyPending: true });
     return this.out(res, q, "Pendências de EPI obrigatório (matriz Função × EPI)", "pendencias-epi", [
       { key: "employeeName", label: "Colaborador", width: 24 },
       { key: "productDescription", label: "EPI obrigatório", width: 26 },
@@ -229,7 +228,7 @@ export class ReportsController {
   }
 
   @Get("audit")
-  @RequirePermissions("audit.view")
+  @Acesso("relatorios.auditoria.visualizar")
   async audit(@Query(zod(reportQuerySchema)) q: Q, @Res() res: Response) {
     const { tenantId } = authed();
     const logs = await this.prisma.auditLog.findMany({ where: { tenantId, ...(q.from || q.to ? { createdAt: period(q) } : {}) }, orderBy: { id: "desc" }, take: 20000 });

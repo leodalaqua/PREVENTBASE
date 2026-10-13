@@ -23,8 +23,6 @@ x-app-env: &app-env
   VERITECH_SSO_INTERNAL_URL: http://host.docker.internal:2922
   VERITECH_SSO_LOCAL_LOGIN: ${VERITECH_SSO_LOCAL_LOGIN:-1}
   SEED_TENANT_NAME: ${SEED_TENANT_NAME:-PreventBase}
-  SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@preventbase.local}
-  SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
   TZ: America/Sao_Paulo
 
 services:

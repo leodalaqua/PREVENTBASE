@@ -25,12 +25,9 @@
   },
   "dependencies": {
     "@preventbase/contracts": "workspace:*",
-    "@preventbase/permissions": "workspace:*",
-    "@prisma/client": "^6.3.1",
-    "bcryptjs": "^2.4.3"
+    "@prisma/client": "^6.3.1"
   },
   "devDependencies": {
-    "@types/bcryptjs": "^2.4.6",
     "dotenv-cli": "^8.0.0",
     "prisma": "^6.3.1",
     "tsx": "^4.19.2",

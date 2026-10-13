@@ -2,8 +2,8 @@ import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
 import { returnCreateSchema, returnStepSchema } from "@preventbase/contracts";
 import type { z } from "zod";
 import { AuditService } from "../../core/audit.service.js";
-import { RequirePermissions } from "../../core/auth.guard.js";
-import { assertCompanyAccess, authed, companyScope, DomainError, notFound } from "../../core/context.js";
+import { Acesso } from "../../core/auth.guard.js";
+import { authed, DomainError, notFound } from "../../core/context.js";
 import { zod } from "../../core/http.js";
 import { PrismaService } from "../../core/prisma.service.js";
 import { StockService } from "../inventory/stock.service.js";
@@ -21,11 +21,11 @@ export class ReturnsController {
   ) {}
 
   @Get()
-  @RequirePermissions("epi.view")
+  @Acesso("entregas.devolucoes.visualizar")
   list(@Query("employeeId") employeeId?: string, @Query("stage") stage?: string) {
     const { tenantId } = authed();
     return this.prisma.epiReturn.findMany({
-      where: { tenantId, ...companyScope(), ...(employeeId ? { employeeId } : {}), ...(stage ? { stage } : {}) },
+      where: { tenantId, ...(employeeId ? { employeeId } : {}), ...(stage ? { stage } : {}) },
       include: { employee: { select: { id: true, name: true, registration: true } }, steps: { orderBy: { performedAt: "asc" } } },
       orderBy: { returnedAt: "desc" },
       take: 200,
@@ -33,12 +33,11 @@ export class ReturnsController {
   }
 
   @Post()
-  @RequirePermissions("epi.return")
+  @Acesso("entregas.devolucoes.inserir")
   async create(@Body(zod(returnCreateSchema)) body: z.infer<typeof returnCreateSchema>) {
     const { tenantId, userId } = authed();
     const employee = await this.prisma.employee.findFirst({ where: { id: body.employeeId, tenantId } });
     if (!employee) throw notFound("Colaborador");
-    assertCompanyAccess(employee.companyId);
     const wh = await this.prisma.warehouse.findFirst({ where: { id: body.warehouseId, tenantId } });
     if (!wh) throw notFound("Almoxarifado");
     let lotId = body.lotId ?? null;
@@ -86,7 +85,7 @@ export class ReturnsController {
   }
 
   @Post(":id/steps")
-  @RequirePermissions("epi.return")
+  @Acesso("entregas.devolucoes.atualizar")
   async step(@Param("id") id: string, @Body(zod(returnStepSchema)) body: z.infer<typeof returnStepSchema>) {
     const { tenantId, userId } = authed();
     const ret = await this.prisma.epiReturn.findFirst({ where: { id, tenantId } });

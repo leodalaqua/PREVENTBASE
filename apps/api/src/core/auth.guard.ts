@@ -2,17 +2,21 @@ import { createHash } from "node:crypto";
 import { type CanActivate, type ExecutionContext, Injectable, SetMetadata } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { JwtService } from "@nestjs/jwt";
-import type { PermissionKey } from "@preventbase/permissions";
+import { type Acesso as AcessoCentral, type ChaveAcesso, normalizarPermissoes, pode } from "@preventbase/permissions";
 import type { Request } from "express";
 import { ctx, DomainError } from "./context.js";
 import { PrismaService } from "./prisma.service.js";
 
 export const IS_PUBLIC = "pb:public";
-export const PERMS = "pb:perms";
+export const ACESSO = "pb:acesso";
 export const TRUSTED_DEVICE = "pb:trusted-device";
 
 export const Public = () => SetMetadata(IS_PUBLIC, true);
-export const RequirePermissions = (...perms: PermissionKey[]) => SetMetadata(PERMS, perms);
+/**
+ * Autorização única: isAdmin ou qualquer uma das chaves `modulo.submodulo.acao` nas permissoes da central.
+ * Rota autenticada sem @Acesso = só da própria conta (me, sessões, MFA, registro do aparelho).
+ */
+export const Acesso = (...chaves: ChaveAcesso[]) => SetMetadata(ACESSO, chaves);
 /** Exige dispositivo confiável quando o tenant tem requireTrustedDevice (biometria/entrega, §56). */
 export const RequireTrustedDevice = () => SetMetadata(TRUSTED_DEVICE, true);
 
@@ -24,8 +28,7 @@ export interface AccessPayload {
 
 interface CachedPrincipal {
   at: number;
-  permissions: Set<PermissionKey>;
-  companyIds: string[] | null;
+  acesso: AcessoCentral;
   sessionOk: boolean;
   requireTrustedDevice: boolean;
 }
@@ -74,8 +77,7 @@ export class AuthGuard implements CanActivate {
     c.userId = payload.sub;
     c.tenantId = payload.tid;
     c.sessionId = payload.sid;
-    c.permissions = principal.permissions;
-    c.companyIds = principal.companyIds;
+    c.acesso = principal.acesso;
 
     if (c.deviceKey) {
       const device = await this.prisma.device.findUnique({
@@ -91,9 +93,8 @@ export class AuthGuard implements CanActivate {
       }
     }
 
-    const required = this.reflector.getAllAndOverride<PermissionKey[]>(PERMS, targets) ?? [];
-    const missing = required.filter((p) => !principal.permissions.has(p));
-    if (missing.length > 0) throw new DomainError(403, "FORBIDDEN", `Permissão necessária: ${missing.join(", ")}`);
+    const chaves = this.reflector.getAllAndOverride<ChaveAcesso[]>(ACESSO, targets);
+    if (chaves?.length && !pode(principal.acesso, ...chaves)) throw new DomainError(403, "FORBIDDEN", "Sem permissão para esta ação no login único Veritech");
 
     if (this.reflector.getAllAndOverride<boolean>(TRUSTED_DEVICE, targets) && principal.requireTrustedDevice) {
       if (c.deviceStatus !== "TRUSTED") {
@@ -111,29 +112,20 @@ export class AuthGuard implements CanActivate {
     const cached = this.cache.get(p.sid);
     if (cached && Date.now() - cached.at < CACHE_MS) return cached;
 
-    const [session, roles, tenant] = await Promise.all([
-      this.prisma.session.findUnique({ where: { id: p.sid }, select: { revokedAt: true, expiresAt: true, userId: true, user: { select: { status: true } } } }),
-      this.prisma.userRole.findMany({
-        where: { userId: p.sub },
-        select: { companyId: true, role: { select: { permissions: { select: { permission: { select: { key: true } } } } } } },
+    const [session, tenant] = await Promise.all([
+      this.prisma.session.findUnique({
+        where: { id: p.sid },
+        select: { revokedAt: true, expiresAt: true, userId: true, ssoSid: true, ssoIsAdmin: true, ssoPermissoes: true, user: { select: { status: true } } },
       }),
       this.prisma.tenant.findUnique({ where: { id: p.tid }, select: { settings: true } }),
     ]);
 
-    const sessionOk = !!session && !session.revokedAt && session.expiresAt > new Date() && session.userId === p.sub && session.user.status === "ACTIVE";
-    const permissions = new Set<PermissionKey>();
-    let all = false;
-    const companies = new Set<string>();
-    for (const r of roles) {
-      for (const rp of r.role.permissions) permissions.add(rp.permission.key as PermissionKey);
-      if (!r.companyId) all = true;
-      else companies.add(r.companyId);
-    }
+    const sessionOk =
+      !!session && !!session.ssoSid && !session.revokedAt && session.expiresAt > new Date() && session.userId === p.sub && session.user.status === "ACTIVE";
     const settings = (tenant?.settings ?? {}) as { requireTrustedDevice?: boolean };
     const principal: CachedPrincipal = {
       at: Date.now(),
-      permissions,
-      companyIds: all ? null : [...companies],
+      acesso: { isAdmin: session?.ssoIsAdmin === true, permissoes: normalizarPermissoes(session?.ssoPermissoes) },
       sessionOk,
       requireTrustedDevice: settings.requireTrustedDevice !== false,
     };

@@ -12,7 +12,7 @@ import {
 import type { Prisma } from "@preventbase/database";
 import { z } from "zod";
 import { AuditService } from "../../core/audit.service.js";
-import { RequirePermissions } from "../../core/auth.guard.js";
+import { Acesso } from "../../core/auth.guard.js";
 import { authed, DomainError, notFound } from "../../core/context.js";
 import { zod } from "../../core/http.js";
 import { PrismaService } from "../../core/prisma.service.js";
@@ -31,7 +31,7 @@ export class EpiController {
   ) {}
 
   @Get("epis")
-  @RequirePermissions("epi.view")
+  @Acesso("epi.catalogo.visualizar", "entregas.entregas.inserir", "entregas.devolucoes.inserir", "estoque.saldos.visualizar", "estoque.inventarios.visualizar", "administracao.funcoes_epi.visualizar")
   async list(@Query(zod(listSchema)) q: z.infer<typeof listSchema>) {
     const { tenantId } = authed();
     const where: Prisma.EpiProductWhereInput = {
@@ -63,7 +63,7 @@ export class EpiController {
   }
 
   @Get("epis/:id")
-  @RequirePermissions("epi.view")
+  @Acesso("epi.catalogo.visualizar", "entregas.entregas.inserir", "entregas.devolucoes.inserir", "estoque.saldos.visualizar", "estoque.inventarios.visualizar", "administracao.funcoes_epi.visualizar")
   async get(@Param("id") id: string) {
     const { tenantId } = authed();
     const product = await this.prisma.epiProduct.findFirst({
@@ -77,7 +77,7 @@ export class EpiController {
   }
 
   @Post("epis")
-  @RequirePermissions("epi.create")
+  @Acesso("epi.catalogo.inserir")
   async create(@Body(zod(epiProductSchema)) body: z.infer<typeof epiProductSchema>) {
     const { tenantId, userId } = authed();
     const { variants, caNumber, guidance, ...data } = body;
@@ -99,7 +99,7 @@ export class EpiController {
   }
 
   @Patch("epis/:id")
-  @RequirePermissions("epi.create")
+  @Acesso("epi.catalogo.alterar")
   async update(@Param("id") id: string, @Body(zod(epiProductUpdateSchema)) body: z.infer<typeof epiProductUpdateSchema>) {
     const { tenantId, userId } = authed();
     const before = await this.prisma.epiProduct.findFirst({ where: { id, tenantId }, include: { cas: { where: { isCurrent: true } } } });
@@ -125,7 +125,7 @@ export class EpiController {
   }
 
   @Post("epis/:id/variants")
-  @RequirePermissions("epi.create")
+  @Acesso("epi.catalogo.alterar")
   async addVariant(@Param("id") id: string, @Body(zod(epiVariantSchema)) body: z.infer<typeof epiVariantSchema>) {
     const { tenantId } = authed();
     const product = await this.prisma.epiProduct.findFirst({ where: { id, tenantId } });
@@ -140,7 +140,7 @@ export class EpiController {
   }
 
   @Patch("epis/:id/variants/:variantId")
-  @RequirePermissions("epi.create")
+  @Acesso("epi.catalogo.alterar")
   async updateVariant(@Param("id") id: string, @Param("variantId") variantId: string, @Body(zod(epiVariantSchema.extend({ active: z.boolean().optional() }).partial())) body: { ean?: string | null; active?: boolean }) {
     const { tenantId } = authed();
     const before = await this.prisma.epiVariant.findFirst({ where: { id: variantId, productId: id, tenantId } });
@@ -154,7 +154,7 @@ export class EpiController {
 
   /** Busca por código de barras/QR: EAN da variação ou código público do lote (§25). */
   @Get("scan/:code")
-  @RequirePermissions("epi.view")
+  @Acesso("epi.catalogo.visualizar", "entregas.entregas.inserir", "entregas.devolucoes.inserir", "estoque.saldos.visualizar", "estoque.inventarios.visualizar", "administracao.funcoes_epi.visualizar")
   async scan(@Param("code") code: string) {
     const { tenantId } = authed();
     const lot = await this.prisma.stockLot.findFirst({
@@ -170,14 +170,14 @@ export class EpiController {
   /* ---------- motivos (§13) ---------- */
 
   @Get("delivery-reasons")
-  @RequirePermissions("epi.view")
+  @Acesso("*")
   reasons() {
     const { tenantId } = authed();
     return this.prisma.deliveryReason.findMany({ where: { tenantId }, orderBy: { sortOrder: "asc" } });
   }
 
   @Post("delivery-reasons")
-  @RequirePermissions("settings.manage")
+  @Acesso("administracao.parametros.inserir", "administracao.parametros.alterar")
   upsertReason(@Body(zod(deliveryReasonSchema)) body: z.infer<typeof deliveryReasonSchema>) {
     const { tenantId } = authed();
     return this.prisma.$transaction(async (tx) => {
@@ -191,7 +191,7 @@ export class EpiController {
   /* ---------- termos versionados (§10) ---------- */
 
   @Get("delivery-terms/active")
-  @RequirePermissions("epi.view")
+  @Acesso("*")
   async activeTerms() {
     const { tenantId } = authed();
     const terms = await this.prisma.deliveryTerms.findFirst({ where: { tenantId, active: true }, orderBy: { version: "desc" } });
@@ -200,14 +200,14 @@ export class EpiController {
   }
 
   @Get("delivery-terms")
-  @RequirePermissions("settings.manage")
+  @Acesso("administracao.parametros.visualizar")
   allTerms() {
     const { tenantId } = authed();
     return this.prisma.deliveryTerms.findMany({ where: { tenantId }, orderBy: { version: "desc" } });
   }
 
   @Post("delivery-terms")
-  @RequirePermissions("settings.manage")
+  @Acesso("administracao.parametros.inserir")
   newTerms(@Body(zod(termsSchema)) body: z.infer<typeof termsSchema>) {
     const { tenantId, userId } = authed();
     return this.prisma.$transaction(async (tx) => {
