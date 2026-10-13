@@ -45,7 +45,7 @@ function CaContent() {
   const file = useRef<HTMLInputElement>(null);
 
   const { data, error, isFetching } = useQuery({ queryKey: ["ca", query], queryFn: () => api.get<CaLookup>(`/ca/${encodeURIComponent(query)}`), enabled: !!query });
-  const { data: syncs } = useQuery({ queryKey: ["ca-syncs"], queryFn: () => api.get<Sync[]>("/ca/syncs"), enabled: can("ca.sync"), refetchInterval: 15_000 });
+  const { data: syncs } = useQuery({ queryKey: ["ca-syncs"], queryFn: () => api.get<Sync[]>("/ca/syncs"), enabled: can("epi.integracao_caepi.visualizar"), refetchInterval: 15_000 });
   const sync = useMutation({ mutationFn: () => api.post("/ca/sync"), onSuccess: () => { toast("Sincronização CAEPI enfileirada"); void qc.invalidateQueries({ queryKey: ["ca-syncs"] }); } });
   const upload = useMutation({
     mutationFn: () => {
@@ -92,20 +92,22 @@ function CaContent() {
           )}
         </Card>
       )}
-      {can("ca.sync") && (
+      {can("epi.integracao_caepi.visualizar") && (
         <Card
           className="mt-4"
           title="Sincronização da base CAEPI"
           actions={
-            <>
+            can("epi.integracao_caepi.atualizar") && (
               <Button variant="secondary" loading={sync.isPending} onClick={() => sync.mutate()}>Sincronizar agora</Button>
-            </>
+            )
           }
         >
-          <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
-            <input ref={file} type="file" accept=".zip,.txt,.csv" className="text-sm" />
-            <Button variant="secondary" loading={upload.isPending} onClick={() => upload.mutate()}>Importar arquivo</Button>
-          </div>
+          {can("epi.integracao_caepi.atualizar") && (
+            <div className="mb-3 flex flex-wrap items-center gap-2 text-sm">
+              <input ref={file} type="file" accept=".zip,.txt,.csv" className="text-sm" />
+              <Button variant="secondary" loading={upload.isPending} onClick={() => upload.mutate()}>Importar arquivo</Button>
+            </div>
+          )}
           <ErrorBox error={sync.error ?? upload.error} />
           <Table
             rows={syncs}

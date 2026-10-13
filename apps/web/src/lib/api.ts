@@ -115,7 +115,7 @@ export async function request<T = unknown>(path: string, opts: RequestOpts = {})
 async function toError(res: Response): Promise<ApiError> {
   const data = (await res.json().catch(() => ({}))) as { code?: string; message?: string; details?: unknown };
   const code = data.code ?? "HTTP_ERROR";
-  if (res.status === 401 && hasSession() && code !== "INVALID_CREDENTIALS" && !code.startsWith("MFA")) listeners.forEach((l) => l());
+  if (res.status === 401 && hasSession() && code !== "INVALID_CREDENTIALS" && !code.startsWith("MFA") && !code.startsWith("SSO_MFA")) listeners.forEach((l) => l());
   return new ApiError(res.status, code, data.message ?? `Erro ${res.status}`, data.details);
 }
 

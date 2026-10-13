@@ -18,8 +18,8 @@ interface Dashboard {
 
 export default function DashboardPage() {
   const { can, me } = useAuth();
-  const { data, error, isLoading } = useQuery({ queryKey: ["dashboard"], queryFn: () => api.get<Dashboard>("/dashboard"), enabled: can("employee.view") });
-  if (!can("employee.view")) return <PageHeader title={`Olá, ${me?.name ?? ""}`} subtitle="Seu perfil não tem acesso ao painel." />;
+  const { data, error, isLoading } = useQuery({ queryKey: ["dashboard"], queryFn: () => api.get<Dashboard>("/dashboard"), enabled: can("inicio.painel.visualizar") });
+  if (!can("inicio.painel.visualizar")) return <PageHeader title={`Olá, ${me?.name ?? ""}`} subtitle="Sem acesso ao painel no login único Veritech. Use o menu para as telas liberadas." />;
   if (isLoading) return <Loading />;
   if (error) return <ErrorBox error={error} />;
   if (!data) return null;
@@ -28,7 +28,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <PageHeader title="Painel SST" subtitle={me?.tenant.name} actions={can("epi.deliver") && <LinkButton href="/entregas/nova"><IconPlus size={18} />Nova entrega</LinkButton>} />
+      <PageHeader title="Painel SST" subtitle={me?.tenant.name} actions={can("entregas.entregas.inserir") && <LinkButton href="/entregas/nova"><IconPlus size={18} />Nova entrega</LinkButton>} />
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Colaboradores ativos" value={c.activeEmployees} href="/colaboradores" />
         <Stat label="Com EPI pendente" value={c.employeesWithPending} tone={c.employeesWithPending ? "amber" : "green"} href="/relatorios?r=pending" />

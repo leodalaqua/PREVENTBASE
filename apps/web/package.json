@@ -12,6 +12,7 @@
     "test": "echo \"no tests\""
   },
   "dependencies": {
+    "@preventbase/permissions": "workspace:*",
     "@tanstack/react-query": "^5.62.11",
     "next": "15.1.6",
     "react": "19.0.0",

@@ -48,7 +48,7 @@ export default function EpisPage() {
 
   return (
     <>
-      <PageHeader title="EPIs" subtitle="Catálogo com CA, variações e orientações de uso" actions={can("epi.create") && <Button onClick={() => setOpen(true)}><IconPlus size={18} />Novo EPI</Button>} />
+      <PageHeader title="EPIs" subtitle="Catálogo com CA, variações e orientações de uso" actions={can("epi.catalogo.inserir") && <Button onClick={() => setOpen(true)}><IconPlus size={18} />Novo EPI</Button>} />
       <Card>
         <div className="mb-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <Input placeholder="Descrição, código, CA, SKU ou EAN" value={q} onChange={(e) => { setQ(e.target.value); setPage(1); }} className="sm:col-span-3" />

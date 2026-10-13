@@ -42,7 +42,7 @@ export default function CountPage({ params }: { params: Promise<{ id: string }> 
 
   if (isLoading) return <Loading />;
   if (error || !c) return <ErrorBox error={error} />;
-  const counting = ["COUNTING", "DIVERGENT"].includes(c.status) && can("inventory.count");
+  const counting = ["COUNTING", "DIVERGENT"].includes(c.status) && can("estoque.inventarios.inserir");
   // contagem cega: o sistema só revela o saldo após a contagem ser enviada
   const blind = c.status === "COUNTING";
   const divergent = c.items.filter((i) => i.finalQty !== null && i.finalQty !== i.systemQty);
@@ -54,11 +54,11 @@ export default function CountPage({ params }: { params: Promise<{ id: string }> 
         subtitle={<span className="flex items-center gap-2">Aberto em {fmtDateTime(c.createdAt)} <StatusBadge status={c.status} /></span>}
         actions={
           <>
-            {c.status === "OPEN" && can("inventory.count") && <Button loading={action.isPending} onClick={() => action.mutate("start")}>Iniciar (snapshot)</Button>}
+            {c.status === "OPEN" && can("estoque.inventarios.inserir") && <Button loading={action.isPending} onClick={() => action.mutate("start")}>Iniciar (snapshot)</Button>}
             {counting && <Button variant="secondary" loading={action.isPending} onClick={() => action.mutate("submit")}>Enviar contagem</Button>}
-            {c.status === "DIVERGENT" && can("inventory.approve") && <Button loading={action.isPending} onClick={() => action.mutate("approve")}>Aprovar ajustes</Button>}
-            {c.status === "APPROVED" && can("inventory.approve") && <Button loading={action.isPending} onClick={() => action.mutate("close")}>Fechar</Button>}
-            {!["CLOSED", "CANCELLED", "APPROVED"].includes(c.status) && can("inventory.approve") && <Button variant="danger" loading={action.isPending} onClick={() => action.mutate("cancel")}>Cancelar</Button>}
+            {c.status === "DIVERGENT" && can("estoque.inventarios.atualizar") && <Button loading={action.isPending} onClick={() => action.mutate("approve")}>Aprovar ajustes</Button>}
+            {c.status === "APPROVED" && can("estoque.inventarios.atualizar") && <Button loading={action.isPending} onClick={() => action.mutate("close")}>Fechar</Button>}
+            {!["CLOSED", "CANCELLED", "APPROVED"].includes(c.status) && can("estoque.inventarios.excluir") && <Button variant="danger" loading={action.isPending} onClick={() => action.mutate("cancel")}>Cancelar</Button>}
           </>
         }
       />

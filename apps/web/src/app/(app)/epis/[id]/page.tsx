@@ -70,7 +70,7 @@ export default function EpiPage({ params }: { params: Promise<{ id: string }> })
 
   if (isLoading) return <Loading />;
   if (error || !p) return <ErrorBox error={error} />;
-  const editable = can("epi.create");
+  const editable = can("epi.catalogo.alterar");
   const caExpired = p.ca?.validUntil ? new Date(p.ca.validUntil) < new Date() : false;
 
   return (

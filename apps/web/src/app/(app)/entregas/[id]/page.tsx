@@ -55,7 +55,7 @@ export default function DeliveryPage({ params }: { params: Promise<{ id: string 
           <>
             <Button onClick={() => void openFile(`/deliveries/${id}/pdf`)}>Comprovante PDF</Button>
             <Link href={`/verificar/${d.publicId}`} target="_blank" className="inline-flex min-h-10 items-center rounded-lg border border-zinc-300 bg-white px-4 text-sm">Verificação pública</Link>
-            {can("epi.cancel_delivery") && d.status === "ACTIVE" && <Button variant="danger" onClick={() => setCancelling(true)}>Cancelar</Button>}
+            {can("entregas.entregas.excluir") && d.status === "ACTIVE" && <Button variant="danger" onClick={() => setCancelling(true)}>Cancelar</Button>}
           </>
         }
       />

@@ -2,10 +2,8 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
-import { PasskeyPanel } from "@/components/passkey/passkey-ui";
 import { Badge, Button, Card, ErrorBox, Field, Input, PageHeader, Table, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
-import { passkeyApi } from "@/lib/passkey";
 import { useAuth } from "@/lib/auth";
 import { fmtDateTime } from "@/lib/format";
 
@@ -31,6 +29,7 @@ export default function AccountPage() {
           {me?.mfaEnabled ? (
             <div className="space-y-3">
               <Badge color="green">Habilitado</Badge>
+              <p className="text-sm text-zinc-500">Dispensado quando você entra com 2FA ou biometria no login único Veritech.</p>
               <Field label="Código atual para desabilitar"><Input inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value)} /></Field>
               <ErrorBox error={disable.error} />
               <Button variant="danger" loading={disable.isPending} onClick={() => disable.mutate()}>Desabilitar</Button>
@@ -47,9 +46,6 @@ export default function AccountPage() {
           ) : (
             <Button loading={start.isPending} onClick={() => start.mutate()}>Habilitar MFA</Button>
           )}
-        </Card>
-        <Card title="Login por biometria (digital / rosto do aparelho)">
-          <PasskeyPanel api={passkeyApi} />
         </Card>
         <Card title="Sessões ativas">
           <Table

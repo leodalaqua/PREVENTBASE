@@ -21,7 +21,7 @@ export function DocumentsPanel({ entityType, entityId }: { entityType: string; e
   const qc = useQueryClient();
   const toast = useToast();
   const key = ["documents", entityType, entityId];
-  const { data } = useQuery({ queryKey: key, queryFn: () => api.get<Doc[]>(`/documents${qs({ entityType, entityId })}`), enabled: can("documents.view") });
+  const { data } = useQuery({ queryKey: key, queryFn: () => api.get<Doc[]>(`/documents${qs({ entityType, entityId })}`), enabled: can("documentos.anexos.visualizar") });
   const file = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("GERAL");
@@ -61,11 +61,11 @@ export function DocumentsPanel({ entityType, entityId }: { entityType: string; e
     },
   });
 
-  if (!can("documents.view")) return <p className="text-sm text-zinc-500">Sem permissão para documentos.</p>;
+  if (!can("documentos.anexos.visualizar")) return <p className="text-sm text-zinc-500">Sem permissão para documentos.</p>;
 
   return (
     <div className="space-y-4">
-      {can("documents.upload") && (
+      {can("documentos.anexos.inserir") && (
         <form
           onSubmit={(e: FormEvent) => {
             e.preventDefault();
@@ -116,7 +116,7 @@ export function DocumentsPanel({ entityType, entityId }: { entityType: string; e
             render: (d) => (
               <div className="flex gap-2">
                 <Button variant="ghost" onClick={() => void openFile(`/documents/${d.id}/versions/${d.versions[0]?.version ?? 1}/download`)}>Abrir</Button>
-                {can("documents.upload") && (
+                {can("documentos.anexos.inserir") && (
                   <Button
                     variant="ghost"
                     loading={newVersion.isPending && versionOf === d.id}

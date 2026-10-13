@@ -34,7 +34,7 @@ export default function CountsPage() {
 
   return (
     <>
-      <PageHeader title="Inventários" subtitle="Contagem cega com snapshot, dupla contagem opcional e aprovação" actions={can("inventory.count") && <Button onClick={() => setOpen(true)}><IconPlus size={18} />Abrir inventário</Button>} />
+      <PageHeader title="Inventários" subtitle="Contagem cega com snapshot, dupla contagem opcional e aprovação" actions={can("estoque.inventarios.inserir") && <Button onClick={() => setOpen(true)}><IconPlus size={18} />Abrir inventário</Button>} />
       <Card>
         <Table
           rows={data}

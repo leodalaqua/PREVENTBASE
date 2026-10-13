@@ -70,7 +70,7 @@ export default function ReturnsPage() {
 
   return (
     <>
-      <PageHeader title="Devoluções e higienização" actions={can("epi.return") && <Button onClick={() => setOpen(true)}><IconPlus size={18} />Registrar devolução</Button>} />
+      <PageHeader title="Devoluções e higienização" actions={can("entregas.devolucoes.inserir") && <Button onClick={() => setOpen(true)}><IconPlus size={18} />Registrar devolução</Button>} />
       <Card>
         <Table
           rows={data}
@@ -86,7 +86,7 @@ export default function ReturnsPage() {
             {
               key: "a",
               label: "",
-              render: (r) => can("epi.return") && !["RELEASED", "DISCARDED"].includes(r.stage) && <Button variant="ghost" onClick={() => setStepFor(r)}>Avançar etapa</Button>,
+              render: (r) => can("entregas.devolucoes.atualizar") && !["RELEASED", "DISCARDED"].includes(r.stage) && <Button variant="ghost" onClick={() => setStepFor(r)}>Avançar etapa</Button>,
             },
           ]}
         />

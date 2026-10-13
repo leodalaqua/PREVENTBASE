@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { CompanySelect, EpiPicker, type PickedVariant } from "@/components/pickers";
 import { IconPlus } from "@/components/icons";
-import { Badge, Button, Card, cx, Empty, ErrorBox, Field, Input, Modal, Notice, PageHeader, Select, StatusBadge, Table, Tabs, Textarea, useToast } from "@/components/ui";
+import { Button, Card, Empty, ErrorBox, Field, Input, Modal, PageHeader, Select, StatusBadge, Table, Tabs, Textarea, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDateTime, maskCnpj } from "@/lib/format";
@@ -25,7 +25,7 @@ function useSave<T>(fn: (body: T) => Promise<unknown>, keys: string[][], msg: st
 
 function Organization() {
   const { can } = useAuth();
-  const manage = can("organization.manage");
+  const manage = can("administracao.organizacao.inserir");
   const { data: companies } = useCompanies();
   const { data: ests } = useEstablishments();
   const { data: deps } = useDepartments();
@@ -85,7 +85,9 @@ interface Requirement { id: string; quantity: number; replacementDays: number | 
 
 function Jobs() {
   const { can } = useAuth();
-  const manage = can("organization.manage");
+  const addJob = can("administracao.funcoes_epi.inserir");
+  const manage = can("administracao.funcoes_epi.alterar");
+  const removable = can("administracao.funcoes_epi.excluir");
   const qc = useQueryClient();
   const { data: jobs } = useJobs();
   const [job, setJob] = useState<Job | null>(null);
@@ -112,7 +114,7 @@ function Jobs() {
             { key: "r", label: "EPIs", render: (j) => j._count?.epiRequirements ?? 0 },
           ]}
         />
-        {manage && (
+        {addJob && (
           <div className="mt-3 grid gap-2 border-t border-zinc-100 pt-3 sm:grid-cols-2">
             <CompanySelect value={nj.companyId} onChange={(v) => setNj({ ...nj, companyId: v })} />
             <Input placeholder="Nome da função" value={nj.name} onChange={(e) => setNj({ ...nj, name: e.target.value })} />
@@ -134,7 +136,7 @@ function Jobs() {
               { key: "p", label: "EPI", render: (r) => r.product.description },
               { key: "q", label: "Qtd", render: (r) => r.quantity },
               { key: "d", label: "Troca (dias)", render: (r) => r.replacementDays ?? r.product.replacementDays ?? "—" },
-              { key: "a", label: "", render: (r) => manage && <Button variant="ghost" onClick={() => removeReq.mutate(r.product.id)}>remover</Button> },
+              { key: "a", label: "", render: (r) => removable && <Button variant="ghost" onClick={() => removeReq.mutate(r.product.id)}>remover</Button> },
             ]}
           />
         )}
@@ -160,7 +162,7 @@ function Warehouses() {
   return (
     <Card title="Almoxarifados">
       <Table rows={data} rowKey={(w) => w.id} columns={[{ key: "n", label: "Nome", render: (w) => w.name }, { key: "c", label: "Código", render: (w) => w.code }, { key: "k", label: "Tipo", render: (w) => w.kind }, { key: "e", label: "Estabelecimento", render: (w) => w.establishment?.name ?? "—" }, { key: "l", label: "Localizações", render: (w) => w.locations.map((l) => l.code).join(", ") }]} />
-      {can("organization.manage") && (
+      {can("administracao.almoxarifados.inserir") && (
         <div className="mt-3 grid gap-2 border-t border-zinc-100 pt-3 sm:grid-cols-2 lg:grid-cols-5">
           <Select value={f.establishmentId} onChange={(e) => setF({ ...f, establishmentId: e.target.value })}>
             <option value="">Estabelecimento…</option>
@@ -181,189 +183,11 @@ function Warehouses() {
   );
 }
 
-interface UserRow { id: string; name: string; email: string; status: string; mfaEnabled: boolean; lastLoginAt: string | null; createdAt: string; roles: Array<{ companyId: string | null; establishmentId: string | null; role: { key: string; name: string } }> }
-interface Role { id: string; key: string; name: string; permissions: Array<{ permission: { key: string } }> }
-interface Assignment { roleKey: string; companyId: string; establishmentId: string | null }
-type UserFilter = "all" | "pending" | "active" | "blocked";
-
-const isPending = (u: UserRow) => u.status === "BLOCKED" && u.roles.length === 0;
-const grantsUsersManage = (r: Role | undefined) => !!r?.permissions.some((p) => p.permission.key === "users.manage");
-
-function UserStatus({ u }: { u: UserRow }) {
-  return isPending(u) ? <Badge color="amber">Aguardando liberação</Badge> : <StatusBadge status={u.status} />;
-}
-
-function RoleEditor({ user, roles, onClose }: { user: UserRow; roles: Role[]; onClose: () => void }) {
-  const { me, can } = useAuth();
-  const self = me?.id === user.id;
-  const [rows, setRows] = useState<Assignment[]>(() =>
-    user.roles.length ? user.roles.map((r) => ({ roleKey: r.role.key, companyId: r.companyId ?? "", establishmentId: r.establishmentId })) : [{ roleKey: "", companyId: "", establishmentId: null }],
-  );
-  const options = roles.filter((r) => r.key !== "super_admin" || can("tenant.manage") || rows.some((a) => a.roleKey === "super_admin"));
-  const byKey = (k: string) => roles.find((r) => r.key === k);
-  const filled = rows.filter((a) => a.roleKey);
-  const duplicated = new Set(filled.map((a) => `${a.roleKey}|${a.companyId}`)).size !== filled.length;
-  const losesAdmin = self && !filled.some((a) => grantsUsersManage(byKey(a.roleKey)));
-  const blocked = filled.length === 0 || filled.length !== rows.length || duplicated || losesAdmin;
-  const payload = () => filled.map((a) => ({ roleKey: a.roleKey, companyId: a.companyId || null, establishmentId: a.establishmentId }));
-  const release = useSave(() => api.patch(`/users/${user.id}`, { roles: payload(), status: "ACTIVE" }), [["users"]], "Acesso liberado", onClose);
-  const save = useSave(() => api.patch(`/users/${user.id}`, { roles: payload() }), [["users"]], "Perfis atualizados", onClose);
-  const set = (i: number, patch: Partial<Assignment>) => setRows(rows.map((a, j) => (j === i ? { ...a, ...patch } : a)));
-  const busy = release.isPending || save.isPending;
-
-  return (
-    <div className="space-y-4">
-      <div className="text-sm">
-        <p className="break-any font-medium text-zinc-900">{user.name}</p>
-        <p className="break-any text-zinc-600">{user.email}</p>
-        <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-          <UserStatus u={user} />
-          <span>criado em {fmtDateTime(user.createdAt)}</span>
-        </div>
-      </div>
-      <ul className="space-y-3">
-        {rows.map((a, i) => (
-          <li key={i} className="grid gap-2 rounded-lg border border-zinc-200 p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end sm:border-0 sm:p-0">
-            <Field label="Perfil">
-              <Select value={a.roleKey} onChange={(e) => set(i, { roleKey: e.target.value })}>
-                <option value="" disabled>Selecione o perfil</option>
-                {options.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
-              </Select>
-            </Field>
-            <Field label="Escopo (empresa)">
-              <CompanySelect allowAll value={a.companyId} onChange={(v) => set(i, { companyId: v, establishmentId: null })} />
-            </Field>
-            <Button variant="ghost" disabled={rows.length === 1} onClick={() => setRows(rows.filter((_, j) => j !== i))}>Remover</Button>
-          </li>
-        ))}
-      </ul>
-      <Button variant="secondary" onClick={() => setRows([...rows, { roleKey: "", companyId: "", establishmentId: null }])}><IconPlus size={18} />Adicionar perfil</Button>
-      <p className="text-xs text-zinc-500">"Todas as empresas" vale para todas as empresas do tenant. Perfil com empresa limita o acesso aos dados dela.</p>
-      {duplicated && <Notice tone="warn">Perfil repetido com o mesmo escopo.</Notice>}
-      {losesAdmin && <Notice tone="warn">Você não pode remover o próprio perfil de administrador.</Notice>}
-      <ErrorBox error={release.error ?? save.error} />
-      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button variant="secondary" onClick={onClose}>Cancelar</Button>
-        {user.status === "ACTIVE" ? (
-          <Button loading={save.isPending} disabled={blocked || busy} onClick={() => save.mutate(undefined)}>Salvar perfis</Button>
-        ) : (
-          <>
-            {user.roles.length > 0 && <Button variant="secondary" loading={save.isPending} disabled={blocked || busy} onClick={() => save.mutate(undefined)}>Salvar sem liberar</Button>}
-            <Button loading={release.isPending} disabled={blocked || busy} onClick={() => release.mutate(undefined)}>Liberar acesso</Button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function Users() {
-  const { can, me } = useAuth();
-  const manage = can("users.manage");
-  const { data } = useQuery({ queryKey: ["users"], queryFn: () => api.get<UserRow[]>("/users?pageSize=500") });
-  const { data: roles } = useQuery({ queryKey: ["roles"], queryFn: () => api.get<Role[]>("/roles") });
-  const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<UserRow | null>(null);
-  const [filter, setFilter] = useState<UserFilter>("all");
-  const [f, setF] = useState({ name: "", email: "", password: "", roleKey: "", companyId: "" });
-  const create = useSave(() => api.post("/users", { name: f.name, email: f.email, password: f.password, roles: [{ roleKey: f.roleKey, companyId: f.companyId || null }] }), [["users"]], "Usuário criado", () => setOpen(false));
-  const toggle = useSave((u: UserRow) => api.patch(`/users/${u.id}`, { status: u.status === "ACTIVE" ? "BLOCKED" : "ACTIVE" }), [["users"]], "Usuário atualizado");
-  const pending = data?.filter(isPending) ?? [];
-  const match: Record<UserFilter, (u: UserRow) => boolean> = { all: () => true, pending: isPending, active: (u) => u.status === "ACTIVE", blocked: (u) => u.status === "BLOCKED" };
-  const rows = data?.filter(match[filter]);
-  const filters: Array<{ id: UserFilter; label: string }> = [
-    { id: "all", label: `Todos${data ? ` (${data.length})` : ""}` },
-    { id: "pending", label: `Aguardando liberação (${pending.length})` },
-    { id: "active", label: "Ativos" },
-    { id: "blocked", label: "Bloqueados" },
-  ];
-  const actions = (u: UserRow) =>
-    manage && (
-      <div className="flex flex-wrap gap-1">
-        {isPending(u) ? (
-          <Button onClick={() => setEditing(u)}>Liberar acesso</Button>
-        ) : (
-          <Button variant="ghost" onClick={() => setEditing(u)}>Perfis</Button>
-        )}
-        {me?.id === u.id ? null : !isPending(u) && <Button variant="ghost" onClick={() => toggle.mutate(u)}>{u.status === "ACTIVE" ? "Bloquear" : "Reativar"}</Button>}
-      </div>
-    );
-
-  return (
-    <Card title="Usuários" actions={manage && <Button onClick={() => setOpen(true)}><IconPlus size={18} />Usuário</Button>}>
-      {pending.length > 0 && filter !== "pending" && (
-        <div className="mb-3 flex flex-col gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 sm:flex-row sm:items-center sm:justify-between">
-          <Notice tone="warn">{pending.length === 1 ? "1 usuário entrou pelo login único e aguarda liberação." : `${pending.length} usuários entraram pelo login único e aguardam liberação.`}</Notice>
-          <Button variant="secondary" onClick={() => setFilter("pending")}>Ver pendentes</Button>
-        </div>
-      )}
-      <div className="mb-3 flex flex-wrap gap-2" role="group" aria-label="Filtrar usuários">
-        {filters.map((x) => (
-          <Button key={x.id} variant={filter === x.id ? "primary" : "secondary"} aria-pressed={filter === x.id} onClick={() => setFilter(x.id)}>{x.label}</Button>
-        ))}
-      </div>
-      <ErrorBox error={toggle.error} />
-      {!rows && <div className="space-y-2 sm:hidden" role="status" aria-busy="true"><span className="sr-only">Carregando…</span><div className="skeleton h-24" /><div className="skeleton h-24" /></div>}
-      {rows?.length === 0 && <div className="sm:hidden"><Empty>{filter === "pending" ? "Nenhum usuário aguardando liberação." : undefined}</Empty></div>}
-      <ul className="space-y-2 sm:hidden">
-        {rows?.map((u) => (
-          <li key={u.id} className={cx("rounded-lg border p-3", isPending(u) ? "border-amber-200 bg-amber-50/60" : "border-zinc-200")}>
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="break-any font-medium text-zinc-900">{u.name}</p>
-                <p className="break-any text-sm text-zinc-600">{u.email}</p>
-              </div>
-              <UserStatus u={u} />
-            </div>
-            <p className="mt-1 text-xs text-zinc-500">{u.roles.map((r) => r.role.name).join(", ") || "Sem perfil"} · último acesso {fmtDateTime(u.lastLoginAt)}</p>
-            <div className="mt-2">{actions(u)}</div>
-          </li>
-        ))}
-      </ul>
-      <div className="hidden sm:block">
-        <Table
-          rows={rows}
-          rowKey={(u) => u.id}
-          empty={filter === "pending" ? "Nenhum usuário aguardando liberação." : undefined}
-          columns={[
-            { key: "n", label: "Nome", render: (u) => u.name },
-            { key: "e", label: "E-mail", render: (u) => <span className="break-any">{u.email}</span> },
-            { key: "r", label: "Perfis", render: (u) => u.roles.map((r) => r.role.name).join(", ") || <span className="text-zinc-500">Sem perfil</span> },
-            { key: "m", label: "MFA", render: (u) => (u.mfaEnabled ? <Badge color="green">sim</Badge> : "não") },
-            { key: "l", label: "Último acesso", render: (u) => fmtDateTime(u.lastLoginAt) },
-            { key: "s", label: "Situação", render: (u) => <UserStatus u={u} /> },
-            { key: "a", label: "", render: actions },
-          ]}
-        />
-      </div>
-      <Modal open={!!editing} title={editing && isPending(editing) ? "Liberar acesso" : "Perfis do usuário"} onClose={() => setEditing(null)} wide>
-        {editing && roles && <RoleEditor key={editing.id} user={editing} roles={roles} onClose={() => setEditing(null)} />}
-      </Modal>
-      <Modal open={open} title="Novo usuário" onClose={() => setOpen(false)}>
-        <div className="space-y-3">
-          <Field label="Nome"><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></Field>
-          <Field label="E-mail"><Input type="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></Field>
-          <Field label="Senha inicial" hint="Mínimo 10 caracteres"><Input type="password" value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} /></Field>
-          <Field label="Perfil">
-            <Select value={f.roleKey} onChange={(e) => setF({ ...f, roleKey: e.target.value })}>
-              <option value="" disabled>Selecione o perfil</option>
-              {roles?.map((r) => <option key={r.key} value={r.key}>{r.name}</option>)}
-            </Select>
-          </Field>
-          <Field label="Escopo (empresa)" hint="Vazio = todas"><CompanySelect allowAll value={f.companyId} onChange={(v) => setF({ ...f, companyId: v })} /></Field>
-          <ErrorBox error={create.error} />
-          <div className="flex justify-end"><Button loading={create.isPending} disabled={!f.roleKey} onClick={() => create.mutate(undefined)}>Criar</Button></div>
-        </div>
-      </Modal>
-    </Card>
-  );
-}
-
 interface Device { id: string; name: string; model: string | null; platform: string | null; status: string; lastSeenAt: string | null; lastIp: string | null; createdAt: string }
 
 function Devices() {
   const { can } = useAuth();
-  const { data } = useQuery({ queryKey: ["devices"], queryFn: () => api.get<Device[]>("/devices"), enabled: can("devices.view") });
+  const { data } = useQuery({ queryKey: ["devices"], queryFn: () => api.get<Device[]>("/devices"), enabled: can("administracao.dispositivos.visualizar") });
   const update = useSave((p: { id: string; status: string }) => api.patch(`/devices/${p.id}`, { status: p.status }), [["devices"], ["me"]], "Dispositivo atualizado");
   return (
     <Card title="Dispositivos">
@@ -381,7 +205,7 @@ function Devices() {
             key: "a",
             label: "",
             render: (d) =>
-              can("devices.manage") && (
+              can("administracao.dispositivos.atualizar") && (
                 <div className="flex gap-1">
                   {d.status !== "TRUSTED" && <Button variant="ghost" onClick={() => update.mutate({ id: d.id, status: "TRUSTED" })}>Aprovar</Button>}
                   {d.status !== "BLOCKED" && <Button variant="ghost" onClick={() => update.mutate({ id: d.id, status: "BLOCKED" })}>Bloquear</Button>}
@@ -399,8 +223,8 @@ interface Terms { id: string; version: number; text: string; active: boolean; cr
 function Settings() {
   const { can } = useAuth();
   const { data: reasons } = useReasons();
-  const { data: terms } = useQuery({ queryKey: ["terms"], queryFn: () => api.get<Terms[]>("/delivery-terms"), enabled: can("settings.manage") });
-  const { data: lgpd } = useQuery({ queryKey: ["lgpd"], queryFn: () => api.get<Array<{ id: string; purpose: string; dataCategory: string; legalBasis: string; source: string; retention: string }>>("/lgpd/processing-records"), enabled: can("audit.view") });
+  const { data: terms } = useQuery({ queryKey: ["terms"], queryFn: () => api.get<Terms[]>("/delivery-terms"), enabled: can("administracao.parametros.visualizar") });
+  const { data: lgpd } = useQuery({ queryKey: ["lgpd"], queryFn: () => api.get<Array<{ id: string; purpose: string; dataCategory: string; legalBasis: string; source: string; retention: string }>>("/lgpd/processing-records"), enabled: can("administracao.lgpd.visualizar") });
   const [r, setR] = useState({ code: "", name: "", requiresJustification: false });
   const [text, setText] = useState("");
   const saveReason = useSave(() => api.post("/delivery-reasons", { ...r, active: true }), [["reasons"]], "Motivo salvo", () => setR({ code: "", name: "", requiresJustification: false }));
@@ -418,10 +242,10 @@ function Settings() {
             { key: "c", label: "Código", render: (x) => <span className="font-mono text-xs">{x.code}</span> },
             { key: "n", label: "Motivo", render: (x) => x.name },
             { key: "j", label: "Justificativa", render: (x) => (x.requiresJustification ? "obrigatória" : "—") },
-            { key: "s", label: "", render: (x) => can("settings.manage") ? <Button variant="ghost" onClick={() => toggleReason.mutate(x)}>{x.active ? "Desativar" : "Ativar"}</Button> : <StatusBadge status={x.active ? "ACTIVE" : "INACTIVE"} /> },
+            { key: "s", label: "", render: (x) => can("administracao.parametros.alterar") ? <Button variant="ghost" onClick={() => toggleReason.mutate(x)}>{x.active ? "Desativar" : "Ativar"}</Button> : <StatusBadge status={x.active ? "ACTIVE" : "INACTIVE"} /> },
           ]}
         />
-        {can("settings.manage") && (
+        {can("administracao.parametros.inserir") && (
           <div className="mt-3 grid gap-2 border-t border-zinc-100 pt-3 sm:grid-cols-3">
             <Input placeholder="CÓDIGO" value={r.code} onChange={(e) => setR({ ...r, code: e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, "") })} />
             <Input placeholder="Nome" value={r.name} onChange={(e) => setR({ ...r, name: e.target.value })} />
@@ -431,12 +255,16 @@ function Settings() {
           </div>
         )}
       </Card>
-      {can("settings.manage") && (
+      {can("administracao.parametros.visualizar") && (
         <Card title={`Termo de entrega ${active ? `(v${active.version} vigente)` : ""}`}>
           {active && <p className="mb-3 whitespace-pre-line rounded bg-zinc-50 p-3 text-sm">{active.text}</p>}
-          <Field label="Nova versão" hint="Publicar cria nova versão; entregas antigas mantêm a versão aceita."><Textarea rows={5} value={text} onChange={(e) => setText(e.target.value)} /></Field>
-          <ErrorBox error={saveTerms.error} />
-          <Button className="mt-2" loading={saveTerms.isPending} disabled={text.trim().length < 20} onClick={() => saveTerms.mutate(undefined)}>Publicar versão</Button>
+          {can("administracao.parametros.inserir") && (
+            <>
+              <Field label="Nova versão" hint="Publicar cria nova versão; entregas antigas mantêm a versão aceita."><Textarea rows={5} value={text} onChange={(e) => setText(e.target.value)} /></Field>
+              <ErrorBox error={saveTerms.error} />
+              <Button className="mt-2" loading={saveTerms.isPending} disabled={text.trim().length < 20} onClick={() => saveTerms.mutate(undefined)}>Publicar versão</Button>
+            </>
+          )}
           {terms && terms.length > 1 && <p className="mt-3 text-xs text-zinc-500">Histórico: {terms.map((t) => `v${t.version} (${fmtDateTime(t.createdAt)})`).join(", ")}</p>}
         </Card>
       )}
@@ -451,23 +279,23 @@ function Settings() {
 
 export default function AdminPage() {
   const { can } = useAuth();
-  const [tab, setTab] = useState("org");
   const tabs = [
-    { id: "org", label: "Organização" },
-    { id: "jobs", label: "Funções × EPI" },
-    { id: "wh", label: "Almoxarifados" },
-    ...(can("users.view") ? [{ id: "users", label: "Usuários" }] : []),
-    ...(can("devices.view") ? [{ id: "devices", label: "Dispositivos" }] : []),
-    { id: "settings", label: "Motivos, termo e LGPD" },
-  ];
+    { id: "org", label: "Organização", on: can("administracao.organizacao.visualizar") },
+    { id: "jobs", label: "Funções × EPI", on: can("administracao.funcoes_epi.visualizar") },
+    { id: "wh", label: "Almoxarifados", on: can("administracao.almoxarifados.visualizar") },
+    { id: "devices", label: "Dispositivos", on: can("administracao.dispositivos.visualizar") },
+    { id: "settings", label: "Motivos, termo e LGPD", on: can("administracao.parametros.visualizar", "administracao.lgpd.visualizar") },
+  ].filter((t) => t.on);
+  const [picked, setTab] = useState<string | null>(null);
+  const tab = picked ?? tabs[0]?.id;
   return (
     <>
       <PageHeader title="Administração" />
-      <Tabs tabs={tabs} value={tab} onChange={setTab} />
+      {tabs.length === 0 && <Empty>Sem acesso à administração no login único Veritech.</Empty>}
+      <Tabs tabs={tabs} value={tab ?? ""} onChange={setTab} />
       {tab === "org" && <Organization />}
       {tab === "jobs" && <Jobs />}
       {tab === "wh" && <Warehouses />}
-      {tab === "users" && <Users />}
       {tab === "devices" && <Devices />}
       {tab === "settings" && <Settings />}
     </>

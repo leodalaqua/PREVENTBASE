@@ -23,29 +23,41 @@ import {
   IconSliders,
   IconUser,
 } from "@/components/icons";
-import { openPasskeys, PasskeyManager } from "@/components/passkey/passkey-ui";
+import type { ChaveAcesso } from "@preventbase/permissions";
 import { usePwa } from "@/components/pwa";
 import { cx } from "@/components/ui";
 import { api } from "@/lib/api";
 import { AuthProvider, useAuth } from "@/lib/auth";
-import { passkeyApi } from "@/lib/passkey";
 
 type NavIcon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
 
-const NAV: Array<{ href: string; label: string; perm?: string; icon: NavIcon }> = [
+/** Telas = submódulos do catálogo da central (C:\ROBBY\config\acessos-catalogo\preventbase.json). */
+const NAV: Array<{ href: string; label: string; perm?: ChaveAcesso[]; icon: NavIcon }> = [
   { href: "/", label: "Painel", icon: IconDashboard },
-  { href: "/entregas/nova", label: "Nova entrega", perm: "epi.deliver", icon: IconPlus },
-  { href: "/colaboradores", label: "Colaboradores", perm: "employee.view", icon: IconUser },
-  { href: "/entregas", label: "Entregas", perm: "epi.view", icon: IconDelivery },
-  { href: "/devolucoes", label: "Devoluções", perm: "epi.view", icon: IconReturn },
-  { href: "/epis", label: "EPIs", perm: "epi.view", icon: IconHardHat },
-  { href: "/ca", label: "Consulta CA", perm: "ca.view", icon: IconHash },
-  { href: "/estoque", label: "Estoque", perm: "inventory.view", icon: IconBox },
-  { href: "/estoque/inventarios", label: "Inventários", perm: "inventory.view", icon: IconClipboardCheck },
-  { href: "/relatorios", label: "Relatórios", perm: "reports.view", icon: IconChart },
-  { href: "/alertas", label: "Alertas", icon: IconBell },
-  { href: "/auditoria", label: "Auditoria", perm: "audit.view", icon: IconScale },
-  { href: "/admin", label: "Administração", perm: "organization.view", icon: IconSliders },
+  { href: "/entregas/nova", label: "Nova entrega", perm: ["entregas.entregas.inserir"], icon: IconPlus },
+  { href: "/colaboradores", label: "Colaboradores", perm: ["colaboradores.cadastro.visualizar"], icon: IconUser },
+  { href: "/entregas", label: "Entregas", perm: ["entregas.entregas.visualizar"], icon: IconDelivery },
+  { href: "/devolucoes", label: "Devoluções", perm: ["entregas.devolucoes.visualizar"], icon: IconReturn },
+  { href: "/epis", label: "EPIs", perm: ["epi.catalogo.visualizar"], icon: IconHardHat },
+  { href: "/ca", label: "Consulta CA", perm: ["epi.ca.visualizar", "epi.integracao_caepi.visualizar"], icon: IconHash },
+  { href: "/estoque", label: "Estoque", perm: ["estoque.saldos.visualizar"], icon: IconBox },
+  { href: "/estoque/inventarios", label: "Inventários", perm: ["estoque.inventarios.visualizar"], icon: IconClipboardCheck },
+  { href: "/relatorios", label: "Relatórios", perm: ["relatorios.relatorios.visualizar"], icon: IconChart },
+  { href: "/alertas", label: "Alertas", perm: ["inicio.painel.visualizar"], icon: IconBell },
+  { href: "/auditoria", label: "Auditoria", perm: ["relatorios.auditoria.visualizar"], icon: IconScale },
+  {
+    href: "/admin",
+    label: "Administração",
+    perm: [
+      "administracao.organizacao.visualizar",
+      "administracao.funcoes_epi.visualizar",
+      "administracao.almoxarifados.visualizar",
+      "administracao.dispositivos.visualizar",
+      "administracao.parametros.visualizar",
+      "administracao.lgpd.visualizar",
+    ],
+    icon: IconSliders,
+  },
 ];
 
 const TABS = ["/", "/entregas/nova", "/colaboradores", "/estoque"];
@@ -92,10 +104,11 @@ function Shell({ children }: { children: ReactNode }) {
       removeEventListener("keydown", onKey);
     };
   }, [open]);
-  const { data: alerts } = useQuery({ queryKey: ["notifications"], queryFn: () => api.get<unknown[]>("/notifications"), enabled: !!me, refetchInterval: 120_000 });
+  const alertsOn = !!me && can("inicio.painel.visualizar");
+  const { data: alerts } = useQuery({ queryKey: ["notifications"], queryFn: () => api.get<unknown[]>("/notifications"), enabled: alertsOn, refetchInterval: 120_000 });
 
   if (loading || !me) return <BrandSplash />;
-  const items = NAV.filter((n) => !n.perm || can(n.perm));
+  const items = NAV.filter((n) => !n.perm || can(...n.perm));
   const active = (href: string) => (href === "/" ? pathname === "/" : pathname === href || (pathname.startsWith(`${href}/`) && !items.some((i) => i.href !== href && i.href.startsWith(href) && pathname.startsWith(i.href))));
   const tabs = items.filter((i) => TABS.includes(i.href));
   const alertCount = alerts?.length ?? 0;
@@ -146,14 +159,11 @@ function Shell({ children }: { children: ReactNode }) {
           )}
           {iosHint && <p className="text-zinc-400">No iPhone: Compartilhar → “Adicionar à Tela de Início”.</p>}
           <p className="truncate text-sm font-medium text-zinc-200">{me.name}</p>
-          <p className="truncate text-zinc-400">{me.roles.map((r) => r.role.name).join(", ")}</p>
+          <p className="truncate text-zinc-400">{me.isAdmin ? "Administrador · login único Veritech" : me.email}</p>
           <div className="flex flex-wrap gap-x-4">
             <Link href="/conta" className="touch-target inline-flex items-center py-1 text-brand-300 underline-offset-2 hover:underline">
               Minha conta
             </Link>
-            <button onClick={openPasskeys} className="py-1 text-brand-300 underline-offset-2 hover:underline">
-              Login biometria
-            </button>
             <button onClick={() => void logout()} className="py-1 text-zinc-400 transition-colors hover:text-white">
               Sair
             </button>
@@ -174,11 +184,11 @@ function Shell({ children }: { children: ReactNode }) {
             <BrandTile className="h-10 w-10" />
             <Wordmark className="hidden w-32 sm:block" />
           </Link>
-          <SearchBox />
-          <Link href="/alertas" className="touch-target relative flex shrink-0 items-center justify-center rounded-lg p-2 text-zinc-700 transition-colors hover:bg-zinc-100 active:bg-zinc-200" aria-label={`Alertas (${alertCount})`}>
+          {can("inicio.busca.visualizar") ? <SearchBox /> : <div className="flex-1" />}
+          {alertsOn && <Link href="/alertas" className="touch-target relative flex shrink-0 items-center justify-center rounded-lg p-2 text-zinc-700 transition-colors hover:bg-zinc-100 active:bg-zinc-200" aria-label={`Alertas (${alertCount})`}>
             <IconBell size={22} />
             {alertCount > 0 && <span className="tabular absolute right-0.5 top-0.5 min-w-[18px] rounded-full bg-red-600 px-1 text-center text-[11px] font-semibold leading-[18px] text-white ring-2 ring-white">{alertCount > 99 ? "99+" : alertCount}</span>}
-          </Link>
+          </Link>}
         </header>
         {me.device?.status !== "TRUSTED" && (
           <div role="status" className="border-b border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-900">
@@ -226,7 +236,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
       <Shell>{children}</Shell>
-      <PasskeyManager api={passkeyApi} />
     </AuthProvider>
   );
 }

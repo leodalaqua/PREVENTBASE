@@ -19,8 +19,6 @@
 
 :root {
   color-scheme: light;
-  --passkey-accent: var(--color-brand-400);
-  --passkey-accent-ink: var(--color-zinc-900);
 }
 
 ::selection {

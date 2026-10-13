@@ -168,7 +168,7 @@ function StockContent() {
       <PageHeader
         title="Estoque"
         subtitle="Saldo é consequência dos movimentos — FEFO por lote"
-        actions={can("inventory.entry") && <Button onClick={() => setEntry(true)}><IconPlus size={18} />Entrada</Button>}
+        actions={can("estoque.saldos.inserir") && <Button onClick={() => setEntry(true)}><IconPlus size={18} />Entrada</Button>}
       />
       <div className="mb-3 max-w-sm"><WarehouseSelect allowAll value={warehouseId} onChange={setWarehouseId} /></div>
       <Tabs value={tab} onChange={setTab} tabs={[{ id: "saldos", label: "Saldos por lote" }, { id: "movimentos", label: "Movimentos" }, { id: "alertas", label: "Alertas" }, { id: "minimos", label: "Mínimo / máximo" }]} />
@@ -191,8 +191,8 @@ function StockContent() {
                 label: "",
                 render: (b) => (
                   <div className="flex gap-1">
-                    {can("inventory.transfer") && <Button variant="ghost" onClick={() => setMove({ b, mode: "transfer" })}>Transferir</Button>}
-                    {can("inventory.adjust") && <Button variant="ghost" onClick={() => setMove({ b, mode: "adjust" })}>Ajustar</Button>}
+                    {can("estoque.saldos.inserir") && <Button variant="ghost" onClick={() => setMove({ b, mode: "transfer" })}>Transferir</Button>}
+                    {can("estoque.saldos.alterar") && <Button variant="ghost" onClick={() => setMove({ b, mode: "adjust" })}>Ajustar</Button>}
                   </div>
                 ),
               },
@@ -244,7 +244,7 @@ function StockContent() {
       )}
 
       {tab === "minimos" && (
-        <Card title="Mínimo / máximo por almoxarifado" actions={can("inventory.adjust") && warehouseId && <Button onClick={() => setLevelOpen(true)}><IconPlus size={18} />Definir</Button>}>
+        <Card title="Mínimo / máximo por almoxarifado" actions={can("estoque.saldos.alterar") && warehouseId && <Button onClick={() => setLevelOpen(true)}><IconPlus size={18} />Definir</Button>}>
           {!warehouseId && <p className="mb-2 text-sm text-zinc-500">Selecione um almoxarifado para definir níveis.</p>}
           <Table rows={levels} rowKey={(l) => l.id} empty="Nenhum nível definido." columns={[{ key: "p", label: "EPI", render: (l) => l.variant.product.description }, { key: "s", label: "SKU", render: (l) => l.variant.sku }, { key: "mi", label: "Mínimo", render: (l) => l.minQty }, { key: "ma", label: "Máximo", render: (l) => l.maxQty ?? "—" }]} />
         </Card>

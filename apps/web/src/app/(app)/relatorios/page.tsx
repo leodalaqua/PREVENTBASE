@@ -16,7 +16,7 @@ const REPORTS = [
   { id: "stock", label: "Posição de estoque por lote", period: false },
   { id: "movements", label: "Movimentações de estoque", period: true },
   { id: "expiring-lots", label: "Lotes vencendo / vencidos", period: false },
-  { id: "audit", label: "Trilha de auditoria", period: true, perm: "audit.view" },
+  { id: "audit", label: "Trilha de auditoria", period: true, perm: "relatorios.auditoria.visualizar" },
 ] as const;
 
 interface Report {

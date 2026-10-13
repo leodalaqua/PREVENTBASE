@@ -76,9 +76,9 @@ export default function EmployeePage({ params }: { params: Promise<{ id: string 
         }
         actions={
           <>
-            {can("epi.deliver") && e.status === "ACTIVE" && <LinkButton href={`/entregas/nova?employeeId=${id}`}><IconPlus size={18} />Entregar EPI</LinkButton>}
+            {can("entregas.entregas.inserir") && e.status === "ACTIVE" && <LinkButton href={`/entregas/nova?employeeId=${id}`}><IconPlus size={18} />Entregar EPI</LinkButton>}
             <Button variant="secondary" onClick={() => void openFile(`/employees/${id}/epi-sheet?format=pdf`)}>Ficha de EPI (PDF)</Button>
-            {can("employee.update") && <Button variant="secondary" onClick={() => setEditing(true)}>Editar</Button>}
+            {can("colaboradores.cadastro.alterar") && <Button variant="secondary" onClick={() => setEditing(true)}>Editar</Button>}
           </>
         }
       />
@@ -159,11 +159,11 @@ export default function EmployeePage({ params }: { params: Promise<{ id: string 
               <p className="text-zinc-500">Base legal: {data.biometric.legalBasis}</p>
               <p className="text-xs text-zinc-500">O template é cifrado e fica isolado no serviço de biometria; nenhuma imagem é armazenada.</p>
               <div className="flex flex-wrap gap-2">
-                {can("biometric.enroll") && <Button variant="secondary" onClick={() => setEnrolling(true)}>Recadastrar</Button>}
-                {can("biometric.revoke") && <Button variant="danger" onClick={() => setRevoking(true)}>Revogar</Button>}
+                {can("colaboradores.biometria.inserir") && <Button variant="secondary" onClick={() => setEnrolling(true)}>Recadastrar</Button>}
+                {can("colaboradores.biometria.excluir") && <Button variant="danger" onClick={() => setRevoking(true)}>Revogar</Button>}
               </div>
             </div>
-          ) : can("biometric.enroll") ? (
+          ) : can("colaboradores.biometria.inserir") ? (
             enrolling ? null : <Button onClick={() => setEnrolling(true)}>Cadastrar biometria</Button>
           ) : (
             <p className="text-sm text-zinc-500">Sem biometria cadastrada.</p>

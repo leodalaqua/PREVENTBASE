@@ -4,31 +4,33 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { type FormEvent, Suspense, useEffect, useRef, useState } from "react";
 import { BrandMark, Wordmark } from "@/components/brand";
 import { IconDownload } from "@/components/icons";
-import { PasskeyLoginButton } from "@/components/passkey/passkey-ui";
-import { passkeyOffer } from "@/components/passkey/webauthn-browser";
 import { usePwa } from "@/components/pwa";
-import { Button, ErrorBox, Field, Input, Notice } from "@/components/ui";
+import { Button, ErrorBox, Field, Input } from "@/components/ui";
 import { api, ApiError, hasSession, setTokens } from "@/lib/api";
-import { passkeyApi } from "@/lib/passkey";
 import { type SsoConfig, ssoAuthorizeUrl, ssoAutoRedirectOnce, ssoConfig, ssoLogin, takeSsoTicket } from "@/lib/sso";
 
 // Avaliado ao carregar o módulo: o ticket sai da URL antes de qualquer efeito/chamada da página.
 let pendingTicket: string | null = typeof window === "undefined" ? null : takeSsoTicket();
 
+const detail = (err: unknown, key: string): string | undefined =>
+  err instanceof ApiError ? ((err.details as Record<string, string> | undefined)?.[key] ?? undefined) : undefined;
+
 function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [login, setLogin] = useState("");
+  const [senha, setSenha] = useState("");
+  const [codigo, setCodigo] = useState("");
   const [mfaCode, setMfaCode] = useState("");
-  const [needMfa, setNeedMfa] = useState(false);
+  /** Desafio do 2FA da central (conta local com 2FA ativo no login único). */
+  const [centralMfaToken, setCentralMfaToken] = useState<string | null>(null);
+  /** Desafio do TOTP do PreventBase (sem segundo fator na central). */
+  const [appMfaToken, setAppMfaToken] = useState<string | null>(null);
   const [error, setError] = useState<unknown>(null);
   const [loading, setLoading] = useState(false);
   const [sso, setSso] = useState<SsoConfig | null>(null);
   const [ssoBusy, setSsoBusy] = useState(false);
-  const [ssoMfaToken, setSsoMfaToken] = useState<string | null>(null);
   const [showLocal, setShowLocal] = useState(false);
-  const [pendingMsg, setPendingMsg] = useState<string | null>(null);
   const started = useRef(false);
   const { canInstall, install, iosHint } = usePwa();
 
@@ -37,19 +39,21 @@ function LoginForm() {
     router.replace(next && next.startsWith("/") && !next.startsWith("//") ? next : "/");
   }
 
-  function ssoFailed(err: unknown) {
-    const token = err instanceof ApiError && err.code.startsWith("MFA") ? (err.details as { mfaToken?: string } | undefined)?.mfaToken : undefined;
-    if (token) {
-      setSsoMfaToken(token);
-      if (err instanceof ApiError && err.code === "MFA_INVALID") setError(err);
+  function failed(err: unknown) {
+    const appToken = err instanceof ApiError && err.code.startsWith("MFA") ? detail(err, "mfaToken") : undefined;
+    if (appToken) {
+      setAppMfaToken(appToken);
+      setError(err instanceof ApiError && err.code === "MFA_INVALID" ? err : null);
       return;
     }
-    setSsoMfaToken(null);
-    if (err instanceof ApiError && err.code === "SSO_PENDING") {
-      setPendingMsg(err.message);
-      setError(null);
+    const centralToken = err instanceof ApiError && err.code.startsWith("SSO_MFA") ? detail(err, "ssoMfaToken") : undefined;
+    if (centralToken) {
+      setCentralMfaToken(centralToken);
+      setError(err instanceof ApiError && err.code === "SSO_MFA_INVALID" ? err : null);
       return;
     }
+    setAppMfaToken(null);
+    setCentralMfaToken(null);
     setError(err);
   }
 
@@ -66,7 +70,7 @@ function LoginForm() {
           enter();
           return;
         } catch (err) {
-          ssoFailed(err);
+          failed(err);
         } finally {
           setSsoBusy(false);
         }
@@ -81,43 +85,35 @@ function LoginForm() {
     })();
   }, []);
 
-  async function submitSsoMfa(e: FormEvent) {
-    e.preventDefault();
-    if (!ssoMfaToken) return;
+  async function run(fn: () => Promise<void>) {
     setLoading(true);
     setError(null);
     try {
-      await ssoLogin({ mfaToken: ssoMfaToken, mfaCode });
+      await fn();
       enter();
     } catch (err) {
-      ssoFailed(err);
+      failed(err);
     } finally {
       setLoading(false);
     }
   }
 
-  async function submit(e: FormEvent) {
+  const submitAppMfa = (e: FormEvent) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
-    try {
-      const tokens = await api.post<{ accessToken: string; refreshToken: string }>("/auth/login", { email, password, mfaCode: mfaCode || undefined });
-      setTokens(tokens);
-      passkeyOffer(passkeyApi.prefix).mark();
-      enter();
-    } catch (err) {
-      if (err instanceof ApiError && err.code === "MFA_REQUIRED") setNeedMfa(true);
-      else setError(err);
-    } finally {
-      setLoading(false);
-    }
-  }
+    if (appMfaToken) void run(() => ssoLogin({ mfaToken: appMfaToken, mfaCode }));
+  };
+
+  const submitLocal = (e: FormEvent) => {
+    e.preventDefault();
+    const body = centralMfaToken ? { ssoMfaToken: centralMfaToken, codigo } : { login, senha };
+    void run(async () => setTokens(await api.post<{ accessToken: string; refreshToken: string }>("/auth/login", body)));
+  };
 
   const card = "relative w-full space-y-4 overflow-hidden rounded-2xl bg-white p-6 pt-7 shadow-2xl shadow-black/40 before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-brand-400";
 
-  if (ssoMfaToken) {
+  if (appMfaToken) {
     return (
-      <form onSubmit={submitSsoMfa} className={card}>
+      <form onSubmit={submitAppMfa} className={card}>
         <h2 className="text-center text-base font-semibold text-zinc-800">Confirme o acesso</h2>
         <p className="text-center text-sm text-zinc-500">Login único Veritech confirmado. Informe o código do seu autenticador do PreventBase.</p>
         <Field label="Código do autenticador">
@@ -134,7 +130,6 @@ function LoginForm() {
   return (
     <div className={card}>
       <h2 className="text-center text-base font-semibold text-zinc-800">Acesse sua conta</h2>
-      {pendingMsg && <Notice tone="warn">{pendingMsg}</Notice>}
       <Button type="button" loading={ssoBusy} disabled={!sso} className="min-h-11 w-full" onClick={() => sso && location.assign(ssoAuthorizeUrl(sso))}>
         {ssoBusy ? "Entrando…" : "Entrar com login único Veritech"}
       </Button>
@@ -144,21 +139,23 @@ function LoginForm() {
         </button>
       )}
       {sso?.local && showLocal && (
-        <form onSubmit={submit} className="space-y-4 border-t border-zinc-100 pt-4">
-          <PasskeyLoginButton api={passkeyApi} onDone={enter} onError={(msg) => setError(msg ? new Error(msg) : null)} className="flex min-h-11 w-full items-center justify-center gap-2 rounded-lg bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60" />
-          <Field label="E-mail">
-            <Input type="email" autoComplete="username" required value={email} onChange={(e) => setEmail(e.target.value)} />
-          </Field>
-          <Field label="Senha">
-            <Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-          </Field>
-          {needMfa && (
-            <Field label="Código do autenticador">
-              <Input inputMode="numeric" autoComplete="one-time-code" autoFocus value={mfaCode} onChange={(e) => setMfaCode(e.target.value)} />
+        <form onSubmit={submitLocal} className="space-y-4 border-t border-zinc-100 pt-4">
+          {centralMfaToken ? (
+            <Field label="Código 2FA do login único Veritech" hint="App autenticador da sua conta Veritech">
+              <Input inputMode="numeric" autoComplete="one-time-code" autoFocus required value={codigo} onChange={(e) => setCodigo(e.target.value)} />
             </Field>
+          ) : (
+            <>
+              <Field label="CPF ou e-mail">
+                <Input autoComplete="username" autoCapitalize="none" required value={login} onChange={(e) => setLogin(e.target.value)} />
+              </Field>
+              <Field label="Senha Veritech">
+                <Input type="password" autoComplete="current-password" required value={senha} onChange={(e) => setSenha(e.target.value)} />
+              </Field>
+            </>
           )}
           <Button type="submit" variant="secondary" loading={loading} className="min-h-11 w-full">
-            Entrar com conta local
+            {centralMfaToken ? "Confirmar código" : "Entrar com conta local"}
           </Button>
         </form>
       )}
