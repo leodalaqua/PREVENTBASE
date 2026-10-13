@@ -1,7 +1,7 @@
 # PreventBase
 
 <!-- versao:inicio -->
-**Versão atual:** `26.10.12.5` (2026-10-12) · [histórico de versões](CHANGELOG.md)
+**Versão atual:** `26.10.13.1` (2026-10-13) · [histórico de versões](CHANGELOG.md)
 <!-- versao:fim -->
 
 Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER-PLAN.md](docs/MASTER-PLAN.md) · Índice: [docs/SUMMARY.md](docs/SUMMARY.md).
@@ -10,6 +10,17 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 ## Atualizações
 
 Últimas 5 versões compiladas dos commits. Histórico completo em [CHANGELOG.md](CHANGELOG.md).
+
+### 26.10.13.1 — 2026-10-13
+
+**Novidades**
+
+- **web:** login pela central e menus pelas permissões do /me ([3d5585c](https://github.com/leodalaqua/PREVENTBASE/commit/3d5585cb7ec1027ca052ed2afefbb709550d5984))
+- **auth:** acesso só pela central Veritech (permissões da sessão, conta local via /sso/password) ([bd00f11](https://github.com/leodalaqua/PREVENTBASE/commit/bd00f11bd4d24a3274c5642dec436c8303aeccf6))
+
+**Documentação**
+
+- **identidade:** acesso pela central Veritech ([b41fbbb](https://github.com/leodalaqua/PREVENTBASE/commit/b41fbbb1433afdb756beba1b758f89a6d681674b))
 
 ### 26.10.12.5 — 2026-10-12
 
@@ -34,12 +45,5 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 **Novidades**
 
 - **passkey:** botão principal da biometria com a cor da marca ([31159f8](https://github.com/leodalaqua/PREVENTBASE/commit/31159f8d122966a44b7e641a3c4dadd2946753d3))
-
-### 26.10.12.1 — 2026-10-12
-
-**Novidades**
-
-- **web:** telas de entrega, biometria e listas mais legíveis em campo ([c9a5bbd](https://github.com/leodalaqua/PREVENTBASE/commit/c9a5bbd8ed79edb849bd0c95baa664f65fd18e78))
-- **web:** base de UI com ícones SVG, foco visível e alvos de toque ([59da36a](https://github.com/leodalaqua/PREVENTBASE/commit/59da36a3e99ecd21335a58ce576cad914eeb1bcd))
 
 <!-- atualizacoes:fim -->
