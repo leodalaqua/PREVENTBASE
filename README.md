@@ -1,7 +1,7 @@
 # PreventBase
 
 <!-- versao:inicio -->
-**Versão atual:** `26.10.13.2` (2026-10-13) · [histórico de versões](CHANGELOG.md)
+**Versão atual:** `26.10.14.1` (2026-10-14) · [histórico de versões](CHANGELOG.md)
 <!-- versao:fim -->
 
 Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER-PLAN.md](docs/MASTER-PLAN.md) · Índice: [docs/SUMMARY.md](docs/SUMMARY.md).
@@ -10,6 +10,12 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 ## Atualizações
 
 Últimas 5 versões compiladas dos commits. Histórico completo em [CHANGELOG.md](CHANGELOG.md).
+
+### 26.10.14.1 — 2026-10-14
+
+**Novidades**
+
+- **ui:** transições mais fluidas ([8861ec4](https://github.com/leodalaqua/PREVENTBASE/commit/8861ec4805fcdb0c63c98a54c3fd922dbf81876d))
 
 ### 26.10.13.2 — 2026-10-13
 
@@ -39,11 +45,5 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 **Novidades**
 
 - **admin:** liberar acesso escolhendo perfis e empresa ([d1eb277](https://github.com/leodalaqua/PREVENTBASE/commit/d1eb277493e90b1d659a4d96292c208344c627d0))
-
-### 26.10.12.3 — 2026-10-12
-
-**Novidades**
-
-- **identidade:** login único cria acesso pendente e aceita 2FA da central ([dcffe40](https://github.com/leodalaqua/PREVENTBASE/commit/dcffe405f5bee9c20afecf249f0f99050f526741))
 
 <!-- atualizacoes:fim -->
