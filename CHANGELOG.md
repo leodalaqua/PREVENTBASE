@@ -3,6 +3,12 @@
 Formato `AA.MM.DD.N`: data do commit + sequência daquele dia. Gerado a partir dos commits por
 `C:\ROBBY\scripts\versioning\release.mjs` — não editar à mão (ajuste a mensagem do commit).
 
+## 26.10.13.2 — 2026-10-13
+
+### Novidades
+
+- **frontend:** formulários compactos em grade e Salvar fixo no rodapé ([738b133](https://github.com/leodalaqua/PREVENTBASE/commit/738b1339d52916be3a54e9b63943ccd94c2910f7))
+
 ## 26.10.13.1 — 2026-10-13
 
 ### Novidades

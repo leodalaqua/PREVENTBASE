@@ -1,7 +1,7 @@
 # PreventBase
 
 <!-- versao:inicio -->
-**Versão atual:** `26.10.13.1` (2026-10-13) · [histórico de versões](CHANGELOG.md)
+**Versão atual:** `26.10.13.2` (2026-10-13) · [histórico de versões](CHANGELOG.md)
 <!-- versao:fim -->
 
 Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER-PLAN.md](docs/MASTER-PLAN.md) · Índice: [docs/SUMMARY.md](docs/SUMMARY.md).
@@ -10,6 +10,12 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 ## Atualizações
 
 Últimas 5 versões compiladas dos commits. Histórico completo em [CHANGELOG.md](CHANGELOG.md).
+
+### 26.10.13.2 — 2026-10-13
+
+**Novidades**
+
+- **frontend:** formulários compactos em grade e Salvar fixo no rodapé ([738b133](https://github.com/leodalaqua/PREVENTBASE/commit/738b1339d52916be3a54e9b63943ccd94c2910f7))
 
 ### 26.10.13.1 — 2026-10-13
 
@@ -39,11 +45,5 @@ Plataforma de Segurança e Saúde no Trabalho (SST). Plano oficial: [docs/MASTER
 **Novidades**
 
 - **identidade:** login único cria acesso pendente e aceita 2FA da central ([dcffe40](https://github.com/leodalaqua/PREVENTBASE/commit/dcffe405f5bee9c20afecf249f0f99050f526741))
-
-### 26.10.12.2 — 2026-10-12
-
-**Novidades**
-
-- **passkey:** botão principal da biometria com a cor da marca ([31159f8](https://github.com/leodalaqua/PREVENTBASE/commit/31159f8d122966a44b7e641a3c4dadd2946753d3))
 
 <!-- atualizacoes:fim -->
