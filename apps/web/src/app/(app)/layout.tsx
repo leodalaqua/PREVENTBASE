@@ -114,7 +114,7 @@ function Shell({ children }: { children: ReactNode }) {
   const alertCount = alerts?.length ?? 0;
 
   return (
-    <div className="min-h-dvh lg:flex">
+    <div className="has-bottom-nav min-h-dvh lg:flex">
       <aside
         className={cx(
           "on-dark fixed inset-y-0 left-0 z-40 flex w-[min(18rem,85vw)] flex-col bg-zinc-900 pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pt-[env(safe-area-inset-top)] text-zinc-200 shadow-xl transition-[transform,visibility] duration-300 ease-drawer motion-reduce:transition-none lg:visible lg:sticky lg:top-0 lg:h-dvh lg:w-64 lg:translate-x-0 lg:shadow-none",

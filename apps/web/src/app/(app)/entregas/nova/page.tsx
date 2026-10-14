@@ -7,7 +7,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { BiometricCapture, type VerifyResult } from "@/components/biometric-capture";
 import { type EmployeeLite, EmployeePicker, EpiPicker, type PickedVariant, WarehouseSelect } from "@/components/pickers";
 import { IconCheck, IconPlus } from "@/components/icons";
-import { Badge, Button, Card, cx, ErrorBox, Field, Input, LinkButton, Loading, Modal, Notice, PageHeader, Select, StatusBadge, Textarea } from "@/components/ui";
+import { Badge, Button, Card, cx, ErrorBox, Field, FormActions, Input, LinkButton, Loading, Modal, Notice, PageHeader, Select, StatusBadge, Textarea } from "@/components/ui";
 import { api, newIdempotencyKey, openFile } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime } from "@/lib/format";
@@ -160,7 +160,7 @@ function Wizard() {
   const linesValid = lines.length > 0 && lines.every((l) => l.quantity > 0 && l.reasonCode && (!activeReasons.find((r) => r.code === l.reasonCode)?.requiresJustification || l.justification.trim()));
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <div className="mx-auto max-w-6xl">
       <PageHeader title="Entrega de EPI" subtitle="Validação legal no servidor · biometria facial 1:1 com prova de vida" />
       <ol className="mb-4 flex gap-1 overflow-x-auto text-xs" aria-label={`Etapa ${step + 1} de ${STEPS.length}: ${STEPS[step]}`}>
         {STEPS.map((s, i) => (
@@ -223,7 +223,7 @@ function Wizard() {
             )}
           </Card>
           <Card title="Itens da entrega">
-            <Field label="Almoxarifado de saída" className="mb-3">
+            <Field label="Almoxarifado de saída" className="mb-3 max-w-md">
               <WarehouseSelect value={warehouseId} onChange={setWarehouseId} companyId={employee.companyId} />
             </Field>
             <div className="space-y-3">
@@ -231,25 +231,27 @@ function Wizard() {
                 const reason = activeReasons.find((r) => r.code === l.reasonCode);
                 return (
                   <div key={l.key} className="rounded-lg border border-zinc-200 bg-zinc-50/60 p-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="break-any font-medium text-zinc-900">{l.product.description}</p>
-                        <p className="break-any text-xs text-zinc-600">{variantLabel(l.variant)} · SKU {l.variant.sku} · CA {l.product.cas[0]?.caNumber ?? "—"}{l.lotId ? " · lote escaneado" : ""}</p>
+                    <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:gap-4">
+                      <div className="flex min-w-0 flex-1 items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="break-any font-medium text-zinc-900">{l.product.description}</p>
+                          <p className="break-any text-xs text-zinc-600">{variantLabel(l.variant)} · SKU {l.variant.sku} · CA {l.product.cas[0]?.caNumber ?? "—"}{l.lotId ? " · lote escaneado" : ""}</p>
+                        </div>
+                        <button className="-mr-1 -mt-1 shrink-0 rounded-lg px-2 py-1 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 active:bg-red-100" onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))}>remover</button>
                       </div>
-                      <button className="-mr-1 -mt-1 shrink-0 rounded-lg px-2 py-1 text-sm font-medium text-red-700 transition-colors hover:bg-red-50 active:bg-red-100" onClick={() => setLines((ls) => ls.filter((x) => x.key !== l.key))}>remover</button>
-                    </div>
-                    <div className="mt-2 grid grid-cols-3 gap-2">
-                      <Field label="Qtd">
-                        <Input type="number" inputMode="numeric" min={1} value={l.quantity} onChange={(e) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, quantity: Number(e.target.value) } : x)))} />
-                      </Field>
-                      <Field label="Motivo" className="col-span-2">
-                        <Select value={l.reasonCode} onChange={(e) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, reasonCode: e.target.value } : x)))}>
-                          <option value="">Selecione…</option>
-                          {activeReasons.map((r) => (
-                            <option key={r.code} value={r.code}>{r.name}</option>
-                          ))}
-                        </Select>
-                      </Field>
+                      <div className="grid grid-cols-3 gap-2 lg:w-96 lg:shrink-0">
+                        <Field label="Qtd">
+                          <Input type="number" inputMode="numeric" min={1} value={l.quantity} onChange={(e) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, quantity: Number(e.target.value) } : x)))} />
+                        </Field>
+                        <Field label="Motivo" className="col-span-2">
+                          <Select value={l.reasonCode} onChange={(e) => setLines((ls) => ls.map((x, j) => (j === i ? { ...x, reasonCode: e.target.value } : x)))}>
+                            <option value="">Selecione…</option>
+                            {activeReasons.map((r) => (
+                              <option key={r.code} value={r.code}>{r.name}</option>
+                            ))}
+                          </Select>
+                        </Field>
+                      </div>
                     </div>
                     {(reason?.requiresJustification || l.justification) && (
                       <Field label={`Justificativa${reason?.requiresJustification ? " (obrigatória)" : ""}`} className="mt-2">
@@ -269,9 +271,11 @@ function Wizard() {
             </div>
           </Card>
           <ErrorBox error={prepare.error} />
-          <Button className="w-full" disabled={!warehouseId || !linesValid} loading={prepare.isPending} onClick={() => prepare.mutate()}>
-            Conferir entrega
-          </Button>
+          <FormActions className="rounded-xl border border-zinc-200 px-4">
+            <Button disabled={!warehouseId || !linesValid} loading={prepare.isPending} onClick={() => prepare.mutate()}>
+              {prepare.isPending ? "Conferindo…" : "Conferir entrega"}
+            </Button>
+          </FormActions>
         </div>
       )}
 
@@ -284,7 +288,7 @@ function Wizard() {
           )}
           {prepared.items.map((it) => (
             <Card key={it.index} title={`${it.quantity}× ${it.productDescription ?? "?"}`}>
-              <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm sm:grid-cols-3">
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-2.5 text-sm sm:grid-cols-3 lg:grid-cols-5">
                 <div><dt className="text-xs text-zinc-500">Lote (FEFO)</dt><dd>{it.lot?.lotNumber ?? "—"}</dd></div>
                 <div><dt className="text-xs text-zinc-500">Validade do lote</dt><dd>{fmtDate(it.lot?.expiryDate)}</dd></div>
                 <div><dt className="text-xs text-zinc-500">CA</dt><dd>{it.lot?.caNumber ?? "—"}</dd></div>
@@ -305,10 +309,10 @@ function Wizard() {
               {it.warnings.map((w) => <Notice key={w} tone="warn" className="mt-2">{w}</Notice>)}
             </Card>
           ))}
-          <div className="flex gap-2">
-            <Button variant="secondary" className="flex-1" onClick={() => setStep(1)}>Voltar</Button>
-            <Button className="flex-1" disabled={!prepared.ok || !deviceOk} onClick={() => setStep(3)}>Prosseguir</Button>
-          </div>
+          <FormActions className="rounded-xl border border-zinc-200 px-4">
+            <Button variant="secondary" onClick={() => setStep(1)}>Voltar</Button>
+            <Button disabled={!prepared.ok || !deviceOk} onClick={() => setStep(3)}>Prosseguir</Button>
+          </FormActions>
         </div>
       )}
 
@@ -329,17 +333,19 @@ function Wizard() {
               {verification ? (
                 <Notice tone="ok">Identidade confirmada (similaridade {verification.score.toFixed(2)}, prova de vida aprovada).</Notice>
               ) : (
-                <BiometricCapture employeeId={employee.id} purpose="DELIVERY" onVerified={setVerification} />
+                <div className="max-w-3xl">
+                  <BiometricCapture employeeId={employee.id} purpose="DELIVERY" onVerified={setVerification} />
+                </div>
               )}
             </Card>
           )}
           <ErrorBox error={submit.error} />
-          <div className="flex gap-2">
-            <Button variant="secondary" className="flex-1" onClick={() => setStep(2)}>Voltar</Button>
-            <Button className="flex-1" disabled={!confirmed || !verification} loading={submit.isPending} onClick={() => submit.mutate()}>
-              Registrar entrega
+          <FormActions className="rounded-xl border border-zinc-200 px-4">
+            <Button variant="secondary" onClick={() => setStep(2)}>Voltar</Button>
+            <Button disabled={!confirmed || !verification} loading={submit.isPending} onClick={() => submit.mutate()}>
+              {submit.isPending ? "Registrando…" : "Registrar entrega"}
             </Button>
-          </div>
+          </FormActions>
         </div>
       )}
 

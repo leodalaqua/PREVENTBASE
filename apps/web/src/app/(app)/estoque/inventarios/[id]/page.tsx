@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { use, useState } from "react";
-import { Button, Card, ErrorBox, Input, Loading, PageHeader, StatusBadge, Table, useToast } from "@/components/ui";
+import { Button, Card, ErrorBox, FormActions, Input, Loading, PageHeader, StatusBadge, Table, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDateTime } from "@/lib/format";
@@ -69,7 +69,6 @@ export default function CountPage({ params }: { params: Promise<{ id: string }> 
             <span>Rodada:</span>
             <Button variant={round === 1 ? "primary" : "secondary"} onClick={() => setRound(1)}>1ª contagem</Button>
             {c.doubleCount && <Button variant={round === 2 ? "primary" : "secondary"} onClick={() => setRound(2)}>2ª contagem</Button>}
-            <Button className="ml-auto" loading={save.isPending} disabled={Object.keys(values).length === 0} onClick={() => save.mutate()}>Salvar contagem</Button>
           </div>
         </Card>
       )}
@@ -89,6 +88,11 @@ export default function CountPage({ params }: { params: Promise<{ id: string }> 
             { key: "f", label: "Final", render: (i) => (i.finalQty === null ? "—" : <span className={i.finalQty !== i.systemQty ? "font-semibold text-amber-700" : ""}>{i.finalQty}</span>) },
           ]}
         />
+        {counting && (
+          <FormActions className="mt-3">
+            <Button loading={save.isPending} disabled={Object.keys(values).length === 0} onClick={() => save.mutate()}>{save.isPending ? "Salvando…" : `Salvar ${round}ª contagem`}</Button>
+          </FormActions>
+        )}
       </Card>
     </>
   );

@@ -7,7 +7,7 @@ import { BiometricCapture } from "@/components/biometric-capture";
 import { DocumentsPanel } from "@/components/documents-panel";
 import { EmployeeForm, type EmployeeData } from "@/components/employee-form";
 import { IconPlus } from "@/components/icons";
-import { Badge, Button, Card, ErrorBox, Field, Input, LinkButton, Loading, Modal, PageHeader, Stat, StatusBadge, Table, Tabs, useToast } from "@/components/ui";
+import { Badge, Button, Card, ErrorBox, Field, FormActions, Input, LinkButton, Loading, Modal, PageHeader, Stat, StatusBadge, Table, Tabs, useToast } from "@/components/ui";
 import { api, openFile } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, maskCpf } from "@/lib/format";
@@ -211,19 +211,27 @@ export default function EmployeePage({ params }: { params: Promise<{ id: string 
       )}
 
       <Modal open={editing} title="Editar colaborador" onClose={() => setEditing(false)} wide>
-        <EmployeeForm initial={{ ...e, id }} onSaved={() => setEditing(false)} />
+        <EmployeeForm initial={{ ...e, id }} onSaved={() => setEditing(false)} onCancel={() => setEditing(false)} />
       </Modal>
       <Modal open={revoking} title="Revogar biometria" onClose={() => setRevoking(false)}>
-        <div className="space-y-3">
+        <form
+          noValidate
+          className="space-y-3"
+          onSubmit={(ev) => {
+            ev.preventDefault();
+            revoke.mutate();
+          }}
+        >
           <p className="text-sm text-zinc-600">O template será eliminado do serviço de biometria. Entregas futuras exigirão novo cadastro. O histórico de entregas permanece íntegro.</p>
           <Field label="Motivo">
             <Input value={revokeReason} onChange={(ev) => setRevokeReason(ev.target.value)} />
           </Field>
           <ErrorBox error={revoke.error} />
-          <div className="flex justify-end">
-            <Button variant="danger" disabled={revokeReason.trim().length < 5} loading={revoke.isPending} onClick={() => revoke.mutate()}>Revogar</Button>
-          </div>
-        </div>
+          <FormActions>
+            <Button type="button" variant="secondary" onClick={() => setRevoking(false)}>Voltar</Button>
+            <Button type="submit" variant="danger" disabled={revokeReason.trim().length < 5} loading={revoke.isPending}>{revoke.isPending ? "Revogando…" : "Revogar"}</Button>
+          </FormActions>
+        </form>
       </Modal>
     </>
   );

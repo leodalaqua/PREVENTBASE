@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { type EmployeeLite, EmployeePicker, WarehouseSelect } from "@/components/pickers";
 import { IconPlus } from "@/components/icons";
-import { Badge, Button, Card, ErrorBox, Field, Input, Modal, PageHeader, Select, Table, Textarea, useToast } from "@/components/ui";
+import { Badge, Button, Card, ErrorBox, Field, FormActions, Input, Modal, PageHeader, Select, Table, Textarea, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDateTime } from "@/lib/format";
@@ -96,48 +96,68 @@ export default function ReturnsPage() {
         {!employee ? (
           <EmployeePicker onPick={setEmployee} />
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <p className="text-sm font-medium sm:col-span-2">{employee.name} <button className="text-xs text-zinc-500 underline" onClick={() => setEmployee(null)}>trocar</button></p>
-            <Field label="Item entregue" className="sm:col-span-2">
-              <Select value={itemId} onChange={(e) => setItemId(e.target.value)}>
-                <option value="">Selecione…</option>
-                {sst?.recentItems.map((i) => <option key={i.id} value={i.id}>{i.productDescription} — lote {i.lotNumber} — {fmtDateTime(i.delivery.deliveredAt)}</option>)}
-              </Select>
-            </Field>
-            <Field label="Almoxarifado de recebimento"><WarehouseSelect value={warehouseId} onChange={setWarehouseId} companyId={employee.companyId} /></Field>
-            <Field label="Quantidade"><Input type="number" min={1} max={item?.quantity} value={f.quantity} onChange={(e) => setF({ ...f, quantity: Number(e.target.value) })} /></Field>
-            <Field label="Estado">
-              <Select value={f.condition} onChange={(e) => setF({ ...f, condition: e.target.value })}>
-                {Object.entries(CONDITION).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </Select>
-            </Field>
-            <Field label="Destino">
-              <Select value={f.destination} onChange={(e) => setF({ ...f, destination: e.target.value })}>
-                {Object.entries(DEST).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-              </Select>
-            </Field>
-            <Field label="Motivo" className="sm:col-span-2"><Input value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} /></Field>
-            <Field label="Observações" className="sm:col-span-2"><Textarea value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></Field>
-            <p className="text-xs text-zinc-500 sm:col-span-2">Só retorna ao estoque imediatamente se reutilizável e em bom estado; demais destinos passam pelo ciclo de higienização/inspeção.</p>
-            <div className="sm:col-span-2"><ErrorBox error={create.error} /></div>
-            <div className="flex justify-end sm:col-span-2">
-              <Button disabled={!item || !warehouseId || f.reason.trim().length < 2} loading={create.isPending} onClick={() => create.mutate()}>Registrar</Button>
+          <form
+            noValidate
+            className="space-y-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              create.mutate();
+            }}
+          >
+            <p className="text-sm font-medium">{employee.name} <button type="button" className="text-xs text-zinc-500 underline" onClick={() => setEmployee(null)}>trocar</button></p>
+            <div className="form-grid">
+              <Field label="Item entregue" className="form-span-full">
+                <Select value={itemId} onChange={(e) => setItemId(e.target.value)}>
+                  <option value="">Selecione…</option>
+                  {sst?.recentItems.map((i) => <option key={i.id} value={i.id}>{i.productDescription} — lote {i.lotNumber} — {fmtDateTime(i.delivery.deliveredAt)}</option>)}
+                </Select>
+              </Field>
+              <Field label="Almoxarifado de recebimento"><WarehouseSelect value={warehouseId} onChange={setWarehouseId} companyId={employee.companyId} /></Field>
+              <Field label="Quantidade"><Input type="number" min={1} max={item?.quantity} value={f.quantity} onChange={(e) => setF({ ...f, quantity: Number(e.target.value) })} /></Field>
+              <Field label="Estado">
+                <Select value={f.condition} onChange={(e) => setF({ ...f, condition: e.target.value })}>
+                  {Object.entries(CONDITION).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </Select>
+              </Field>
+              <Field label="Destino">
+                <Select value={f.destination} onChange={(e) => setF({ ...f, destination: e.target.value })}>
+                  {Object.entries(DEST).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                </Select>
+              </Field>
+              <Field label="Motivo" className="form-span-full"><Input value={f.reason} onChange={(e) => setF({ ...f, reason: e.target.value })} /></Field>
+              <Field label="Observações" className="form-span-full"><Textarea rows={2} value={f.notes} onChange={(e) => setF({ ...f, notes: e.target.value })} /></Field>
+              <p className="form-span-full text-xs text-zinc-500">Só retorna ao estoque imediatamente se reutilizável e em bom estado; demais destinos passam pelo ciclo de higienização/inspeção.</p>
             </div>
-          </div>
+            <ErrorBox error={create.error} />
+            <FormActions>
+              <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button>
+              <Button type="submit" disabled={!item || !warehouseId || f.reason.trim().length < 2} loading={create.isPending}>{create.isPending ? "Salvando…" : "Registrar"}</Button>
+            </FormActions>
+          </form>
         )}
       </Modal>
 
       <Modal open={!!stepFor} title="Avançar etapa" onClose={() => setStepFor(null)}>
-        <div className="space-y-3">
+        <form
+          noValidate
+          className="space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            addStep.mutate();
+          }}
+        >
           <Field label="Etapa">
             <Select value={step} onChange={(e) => setStep(e.target.value)}>
               {NEXT_STEPS.map((s) => <option key={s} value={s}>{STAGE[s]}</option>)}
             </Select>
           </Field>
-          <Field label="Observações"><Textarea value={stepNotes} onChange={(e) => setStepNotes(e.target.value)} /></Field>
+          <Field label="Observações"><Textarea rows={2} value={stepNotes} onChange={(e) => setStepNotes(e.target.value)} /></Field>
           <ErrorBox error={addStep.error} />
-          <div className="flex justify-end"><Button loading={addStep.isPending} onClick={() => addStep.mutate()}>Registrar etapa</Button></div>
-        </div>
+          <FormActions>
+            <Button type="button" variant="secondary" onClick={() => setStepFor(null)}>Cancelar</Button>
+            <Button type="submit" loading={addStep.isPending}>{addStep.isPending ? "Salvando…" : "Registrar etapa"}</Button>
+          </FormActions>
+        </form>
       </Modal>
     </>
   );

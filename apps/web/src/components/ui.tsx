@@ -49,7 +49,7 @@ export function LinkButton({ href, variant = "primary", children, className }: {
 }
 
 const inputCls =
-  "w-full min-h-10 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-zinc-500 hover:border-zinc-400 focus:border-brand-700 focus:ring-3 focus:ring-brand-400/40 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-500 aria-invalid:border-red-600 aria-invalid:focus:ring-red-500/25";
+  "w-full min-h-9 rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-zinc-500 hover:border-zinc-400 focus:border-brand-700 focus:ring-3 focus:ring-brand-400/40 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-500 aria-invalid:border-red-600 aria-invalid:focus:ring-red-500/25";
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={cx(inputCls, props.className)} />;
@@ -67,11 +67,21 @@ export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
 
 export function Field({ label, children, hint, className }: { label: string; children: ReactNode; hint?: string; className?: string }) {
   return (
-    <label className={cx("block space-y-1.5", className)}>
+    <label className={cx("block space-y-1", className)}>
       <span className="block text-xs font-medium uppercase tracking-wide text-zinc-600">{label}</span>
       {children}
       {hint && <span className="block text-xs text-zinc-600">{hint}</span>}
     </label>
+  );
+}
+
+/** Barra de ações fixa no rodapé do form: `danger` à esquerda; `children` à direita (secundário antes, primário por último). */
+export function FormActions({ children, danger, className }: { children: ReactNode; danger?: ReactNode; className?: string }) {
+  return (
+    <div className={cx("form-actions", className)}>
+      {danger && <div className="form-actions-danger">{danger}</div>}
+      <div className="form-actions-main">{children}</div>
+    </div>
   );
 }
 
@@ -279,16 +289,16 @@ export function Modal({ open, title, onClose, children, wide }: { open: boolean;
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className={cx("sheet-enter max-h-[calc(100dvh-env(safe-area-inset-top))] w-full overflow-y-auto overscroll-contain rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_32px_rgba(24,24,27,0.18)] sm:max-h-[90dvh] sm:rounded-2xl sm:shadow-xl", wide ? "sm:max-w-3xl" : "sm:max-w-lg")}
+        className={cx("sheet-enter flex max-h-[calc(100dvh-env(safe-area-inset-top))] w-full flex-col overflow-hidden rounded-t-2xl bg-white pb-[env(safe-area-inset-bottom)] shadow-[0_-8px_32px_rgba(24,24,27,0.18)] sm:max-h-[90dvh] sm:rounded-2xl sm:shadow-xl", wide ? "sm:max-w-3xl" : "sm:max-w-lg")}
         onClick={(e) => e.stopPropagation()}
       >
-        <header className="sticky top-0 z-10 flex items-center justify-between gap-3 border-b border-zinc-100 bg-white px-4 py-3">
+        <header className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-100 bg-white px-4 py-3">
           <h3 className="min-w-0 font-semibold text-zinc-900">{title}</h3>
           <button onClick={onClose} className="touch-target -mr-1 inline-flex items-center justify-center rounded-lg p-2 text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-800" aria-label="Fechar">
             <IconClose />
           </button>
         </header>
-        <div className="p-4">{children}</div>
+        <div className="modal-body min-h-0 flex-1 overflow-y-auto overscroll-contain p-4">{children}</div>
       </div>
     </div>
   );

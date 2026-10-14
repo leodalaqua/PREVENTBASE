@@ -143,6 +143,85 @@ dd,
   padding-bottom: 0.625rem;
 }
 
+@layer components {
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+    gap: 12px 16px;
+    align-items: start;
+  }
+  .form-span-full {
+    grid-column: 1 / -1;
+  }
+  .form-section {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-top: 0.25rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.025em;
+    text-transform: uppercase;
+    color: var(--color-zinc-700);
+  }
+  .form-section::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--color-zinc-200);
+  }
+  .form-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 0 max(0.75rem, env(safe-area-inset-bottom));
+    border-top: 1px solid var(--color-zinc-200);
+    background: #fff;
+    box-shadow: 0 -6px 12px -10px rgba(24, 24, 27, 0.25);
+  }
+  .form-actions-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .form-actions-main > *,
+  .form-actions-danger > * {
+    width: 100%;
+  }
+  @media (min-width: 640px) {
+    .form-actions {
+      flex-direction: row;
+      align-items: center;
+    }
+    .form-actions-main {
+      flex-direction: row;
+      align-items: center;
+      margin-left: auto;
+    }
+    .form-actions-main > *,
+    .form-actions-danger > * {
+      width: auto;
+    }
+  }
+  /* Acima da barra de navegação inferior do PWA (min-h-14 + borda + safe area). */
+  @media (max-width: 1023.98px) {
+    .has-bottom-nav .form-actions {
+      bottom: calc(3.5rem + 1px + env(safe-area-inset-bottom));
+      padding-bottom: 0.75rem;
+    }
+  }
+  /* Em modal o corpo é o container de rolagem: barra encostada nas bordas do corpo (p-4). */
+  .modal-body .form-actions {
+    bottom: 0;
+    margin: 0 -1rem -1rem;
+    padding: 0.75rem 1rem;
+  }
+}
+
 @keyframes pb-fade-in {
   from {
     opacity: 0;

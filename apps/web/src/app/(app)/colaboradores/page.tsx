@@ -56,7 +56,7 @@ export default function EmployeesPage() {
         {data && <Pager page={page} pageSize={data.pageSize} total={data.total} onPage={setPage} />}
       </Card>
       <Modal open={creating} title="Novo colaborador" onClose={() => setCreating(false)} wide>
-        <EmployeeForm onSaved={(e) => router.push(`/colaboradores/${e.id}`)} />
+        <EmployeeForm onSaved={(e) => router.push(`/colaboradores/${e.id}`)} onCancel={() => setCreating(false)} />
       </Modal>
     </>
   );

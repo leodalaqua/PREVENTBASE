@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { use, useState } from "react";
-import { Badge, Button, Card, ErrorBox, Field, Loading, Modal, PageHeader, StatusBadge, Table, Textarea, useToast } from "@/components/ui";
+import { Badge, Button, Card, ErrorBox, Field, FormActions, Loading, Modal, PageHeader, StatusBadge, Table, Textarea, useToast } from "@/components/ui";
 import { api, openFile } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, maskCpf } from "@/lib/format";
@@ -103,16 +103,24 @@ export default function DeliveryPage({ params }: { params: Promise<{ id: string 
         />
       </Card>
       <Modal open={cancelling} title="Cancelar entrega" onClose={() => setCancelling(false)}>
-        <div className="space-y-3">
+        <form
+          noValidate
+          className="space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            cancel.mutate();
+          }}
+        >
           <p className="text-sm text-zinc-600">O registro original não é apagado: a entrega fica marcada como cancelada, o estoque é estornado por movimento e a ação é auditada.</p>
           <Field label="Motivo do cancelamento">
             <Textarea value={reason} onChange={(e) => setReason(e.target.value)} />
           </Field>
           <ErrorBox error={cancel.error} />
-          <div className="flex justify-end">
-            <Button variant="danger" disabled={reason.trim().length < 5} loading={cancel.isPending} onClick={() => cancel.mutate()}>Confirmar cancelamento</Button>
-          </div>
-        </div>
+          <FormActions>
+            <Button type="button" variant="secondary" onClick={() => setCancelling(false)}>Voltar</Button>
+            <Button type="submit" variant="danger" disabled={reason.trim().length < 5} loading={cancel.isPending}>{cancel.isPending ? "Cancelando…" : "Confirmar cancelamento"}</Button>
+          </FormActions>
+        </form>
       </Modal>
     </>
   );

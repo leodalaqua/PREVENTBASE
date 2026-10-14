@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { EpiPicker, type PickedVariant, WarehouseSelect } from "@/components/pickers";
 import { IconPlus } from "@/components/icons";
-import { Badge, Button, Card, ErrorBox, Field, Input, Modal, PageHeader, Pager, Select, Table, Tabs, Textarea, useToast } from "@/components/ui";
+import { Badge, Button, Card, ErrorBox, Field, FormActions, Input, Modal, PageHeader, Pager, Select, Table, Tabs, Textarea, useToast } from "@/components/ui";
 import { api, newIdempotencyKey, qs } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtDateTime, MOVEMENT_LABEL, today } from "@/lib/format";
@@ -31,7 +31,7 @@ function caBadge(v: boolean | null) {
   return v === true ? <Badge color="green">CA ok</Badge> : v === false ? <Badge color="red">CA vencido na compra</Badge> : <Badge color="amber">CA não verificado</Badge>;
 }
 
-function EntryForm({ onDone }: { onDone: () => void }) {
+function EntryForm({ onDone, onCancel }: { onDone: () => void; onCancel?: () => void }) {
   const toast = useToast();
   const [picked, setPicked] = useState<PickedVariant | null>(null);
   const [key] = useState(newIdempotencyKey);
@@ -63,25 +63,37 @@ function EntryForm({ onDone }: { onDone: () => void }) {
   });
   if (!picked) return <EpiPicker onPick={(p) => { setPicked(p); setF((s) => ({ ...s, caNumber: p.product.cas[0]?.caNumber ?? "" })); }} />;
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <p className="text-sm font-medium sm:col-span-2">{picked.product.description} — {variantLabel(picked.variant)} <button className="text-xs text-zinc-500 underline" onClick={() => setPicked(null)}>trocar</button></p>
-      <Field label="Almoxarifado"><WarehouseSelect value={f.warehouseId} onChange={(v) => setF({ ...f, warehouseId: v })} /></Field>
-      <Field label="Quantidade"><Input type="number" min={1} value={f.quantity} onChange={(e) => setF({ ...f, quantity: Number(e.target.value) })} /></Field>
-      <Field label="Lote"><Input value={f.lotNumber} onChange={(e) => setF({ ...f, lotNumber: e.target.value })} /></Field>
-      <Field label="CA do lote"><Input value={f.caNumber} onChange={(e) => setF({ ...f, caNumber: e.target.value })} /></Field>
-      <Field label="Data da compra"><Input type="date" value={f.purchaseDate} onChange={(e) => setF({ ...f, purchaseDate: e.target.value })} /></Field>
-      <Field label="Validade do lote (fabricante)"><Input type="date" value={f.expiryDate} onChange={(e) => setF({ ...f, expiryDate: e.target.value })} /></Field>
-      <Field label="Validade do CA na compra" hint="Vazio = usa a base CAEPI"><Input type="date" value={f.caValidityAtPurchase} onChange={(e) => setF({ ...f, caValidityAtPurchase: e.target.value })} /></Field>
-      <Field label="Custo unitário"><Input inputMode="decimal" value={f.unitCost} onChange={(e) => setF({ ...f, unitCost: e.target.value })} /></Field>
-      <Field label="Fornecedor"><Input value={f.supplier} onChange={(e) => setF({ ...f, supplier: e.target.value })} /></Field>
-      <Field label="Nota fiscal"><Input value={f.invoiceNumber} onChange={(e) => setF({ ...f, invoiceNumber: e.target.value })} /></Field>
-      <div className="sm:col-span-2"><ErrorBox error={save.error} /></div>
-      <div className="flex justify-end sm:col-span-2"><Button disabled={!f.warehouseId || !f.lotNumber || !f.purchaseDate} loading={save.isPending} onClick={() => save.mutate()}>Registrar entrada</Button></div>
-    </div>
+    <form
+      noValidate
+      className="space-y-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate();
+      }}
+    >
+      <p className="text-sm font-medium">{picked.product.description} — {variantLabel(picked.variant)} <button type="button" className="text-xs text-zinc-500 underline" onClick={() => setPicked(null)}>trocar</button></p>
+      <div className="form-grid">
+        <Field label="Almoxarifado"><WarehouseSelect value={f.warehouseId} onChange={(v) => setF({ ...f, warehouseId: v })} /></Field>
+        <Field label="Quantidade"><Input type="number" min={1} value={f.quantity} onChange={(e) => setF({ ...f, quantity: Number(e.target.value) })} /></Field>
+        <Field label="Lote"><Input value={f.lotNumber} onChange={(e) => setF({ ...f, lotNumber: e.target.value })} /></Field>
+        <Field label="CA do lote"><Input value={f.caNumber} onChange={(e) => setF({ ...f, caNumber: e.target.value })} /></Field>
+        <Field label="Data da compra"><Input type="date" value={f.purchaseDate} onChange={(e) => setF({ ...f, purchaseDate: e.target.value })} /></Field>
+        <Field label="Validade do lote (fabricante)"><Input type="date" value={f.expiryDate} onChange={(e) => setF({ ...f, expiryDate: e.target.value })} /></Field>
+        <Field label="Validade do CA na compra" hint="Vazio = usa a base CAEPI"><Input type="date" value={f.caValidityAtPurchase} onChange={(e) => setF({ ...f, caValidityAtPurchase: e.target.value })} /></Field>
+        <Field label="Custo unitário"><Input inputMode="decimal" value={f.unitCost} onChange={(e) => setF({ ...f, unitCost: e.target.value })} /></Field>
+        <Field label="Fornecedor"><Input value={f.supplier} onChange={(e) => setF({ ...f, supplier: e.target.value })} /></Field>
+        <Field label="Nota fiscal"><Input value={f.invoiceNumber} onChange={(e) => setF({ ...f, invoiceNumber: e.target.value })} /></Field>
+      </div>
+      <ErrorBox error={save.error} />
+      <FormActions>
+        {onCancel && <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>}
+        <Button type="submit" disabled={!f.warehouseId || !f.lotNumber || !f.purchaseDate} loading={save.isPending}>{save.isPending ? "Salvando…" : "Registrar entrada"}</Button>
+      </FormActions>
+    </form>
   );
 }
 
-function MoveForm({ balance, mode, onDone }: { balance: Balance; mode: "transfer" | "adjust"; onDone: () => void }) {
+function MoveForm({ balance, mode, onDone, onCancel }: { balance: Balance; mode: "transfer" | "adjust"; onDone: () => void; onCancel?: () => void }) {
   const toast = useToast();
   const [key] = useState(newIdempotencyKey);
   const [toWarehouseId, setTo] = useState("");
@@ -99,27 +111,37 @@ function MoveForm({ balance, mode, onDone }: { balance: Balance; mode: "transfer
     },
   });
   return (
-    <div className="space-y-3">
+    <form
+      noValidate
+      className="space-y-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        save.mutate();
+      }}
+    >
       <p className="text-sm">{balance.lot.variant.product.description} — lote {balance.lot.lotNumber} · saldo {balance.quantity} em {balance.warehouse.name}/{balance.location.code}</p>
-      {mode === "transfer" ? (
-        <Field label="Destino"><WarehouseSelect value={toWarehouseId} onChange={setTo} /></Field>
-      ) : (
-        <Field label="Tipo">
-          <Select value={type} onChange={(e) => setType(e.target.value)}>
-            <option value="ADJUSTMENT_OUT">Ajuste (−)</option>
-            <option value="ADJUSTMENT_IN">Ajuste (+)</option>
-            <option value="LOSS">Perda</option>
-            <option value="DISPOSAL">Descarte</option>
-          </Select>
-        </Field>
-      )}
-      <Field label="Quantidade"><Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} /></Field>
-      <Field label={mode === "transfer" ? "Observação" : "Motivo (obrigatório)"}><Textarea value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
-      <ErrorBox error={save.error} />
-      <div className="flex justify-end">
-        <Button disabled={mode === "transfer" ? !toWarehouseId : reason.trim().length < 3} loading={save.isPending} onClick={() => save.mutate()}>Confirmar</Button>
+      <div className="form-grid">
+        {mode === "transfer" ? (
+          <Field label="Destino"><WarehouseSelect value={toWarehouseId} onChange={setTo} /></Field>
+        ) : (
+          <Field label="Tipo">
+            <Select value={type} onChange={(e) => setType(e.target.value)}>
+              <option value="ADJUSTMENT_OUT">Ajuste (−)</option>
+              <option value="ADJUSTMENT_IN">Ajuste (+)</option>
+              <option value="LOSS">Perda</option>
+              <option value="DISPOSAL">Descarte</option>
+            </Select>
+          </Field>
+        )}
+        <Field label="Quantidade"><Input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} /></Field>
+        <Field label={mode === "transfer" ? "Observação" : "Motivo (obrigatório)"} className="form-span-full"><Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} /></Field>
       </div>
-    </div>
+      <ErrorBox error={save.error} />
+      <FormActions>
+        {onCancel && <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>}
+        <Button type="submit" disabled={mode === "transfer" ? !toWarehouseId : reason.trim().length < 3} loading={save.isPending}>{save.isPending ? "Salvando…" : "Confirmar"}</Button>
+      </FormActions>
+    </form>
   );
 }
 
@@ -251,22 +273,34 @@ function StockContent() {
       )}
 
       <Modal open={entry} title="Entrada de estoque" onClose={() => setEntry(false)} wide>
-        <EntryForm onDone={refresh} />
+        <EntryForm onDone={refresh} onCancel={() => setEntry(false)} />
       </Modal>
       <Modal open={!!move} title={move?.mode === "transfer" ? "Transferência" : "Ajuste / perda / descarte"} onClose={() => setMove(null)}>
-        {move && <MoveForm balance={move.b} mode={move.mode} onDone={refresh} />}
+        {move && <MoveForm balance={move.b} mode={move.mode} onDone={refresh} onCancel={() => setMove(null)} />}
       </Modal>
       <Modal open={levelOpen} title="Definir mínimo / máximo" onClose={() => setLevelOpen(false)}>
         {!level ? (
           <EpiPicker onPick={setLevel} />
         ) : (
-          <div className="space-y-3">
+          <form
+            noValidate
+            className="space-y-3"
+            onSubmit={(e) => {
+              e.preventDefault();
+              saveLevel.mutate();
+            }}
+          >
             <p className="text-sm">{level.product.description} — {variantLabel(level.variant)}</p>
-            <Field label="Mínimo"><Input type="number" min={0} value={minQty} onChange={(e) => setMinQty(Number(e.target.value))} /></Field>
-            <Field label="Máximo"><Input type="number" min={0} value={maxQty} onChange={(e) => setMaxQty(e.target.value)} /></Field>
+            <div className="form-grid">
+              <Field label="Mínimo"><Input type="number" min={0} value={minQty} onChange={(e) => setMinQty(Number(e.target.value))} /></Field>
+              <Field label="Máximo"><Input type="number" min={0} value={maxQty} onChange={(e) => setMaxQty(e.target.value)} /></Field>
+            </div>
             <ErrorBox error={saveLevel.error} />
-            <div className="flex justify-end"><Button loading={saveLevel.isPending} onClick={() => saveLevel.mutate()}>Salvar</Button></div>
-          </div>
+            <FormActions>
+              <Button type="button" variant="secondary" onClick={() => setLevelOpen(false)}>Cancelar</Button>
+              <Button type="submit" loading={saveLevel.isPending}>{saveLevel.isPending ? "Salvando…" : "Salvar"}</Button>
+            </FormActions>
+          </form>
         )}
       </Modal>
     </>

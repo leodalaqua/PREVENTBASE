@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { WarehouseSelect } from "@/components/pickers";
 import { IconPlus } from "@/components/icons";
-import { Button, Card, ErrorBox, Field, Modal, PageHeader, StatusBadge, Table, Textarea } from "@/components/ui";
+import { Button, Card, ErrorBox, Field, FormActions, Modal, PageHeader, StatusBadge, Table, Textarea } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDateTime } from "@/lib/format";
@@ -51,13 +51,23 @@ export default function CountsPage() {
         />
       </Card>
       <Modal open={open} title="Abrir inventário" onClose={() => setOpen(false)}>
-        <div className="space-y-3">
+        <form
+          noValidate
+          className="space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            create.mutate();
+          }}
+        >
           <Field label="Almoxarifado"><WarehouseSelect value={warehouseId} onChange={setWarehouseId} /></Field>
           <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={doubleCount} onChange={(e) => setDouble(e.target.checked)} /> Dupla contagem (2º contador diferente)</label>
-          <Field label="Observações"><Textarea value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
+          <Field label="Observações"><Textarea rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>
           <ErrorBox error={create.error} />
-          <div className="flex justify-end"><Button disabled={!warehouseId} loading={create.isPending} onClick={() => create.mutate()}>Abrir</Button></div>
-        </div>
+          <FormActions>
+            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button type="submit" disabled={!warehouseId} loading={create.isPending}>{create.isPending ? "Abrindo…" : "Abrir"}</Button>
+          </FormActions>
+        </form>
       </Modal>
     </>
   );

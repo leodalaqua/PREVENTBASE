@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { IconPlus } from "@/components/icons";
-import { Button, Card, ErrorBox, Field, Input, Modal, PageHeader, Pager, Select, StatusBadge, Table, Textarea, useToast } from "@/components/ui";
+import { Button, Card, ErrorBox, Field, FormActions, Input, Modal, PageHeader, Pager, Select, StatusBadge, Table, Textarea, useToast } from "@/components/ui";
 import { api, qs } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import type { EpiProduct, Paged } from "@/lib/hooks";
@@ -75,25 +75,39 @@ export default function EpisPage() {
         {data && <Pager page={page} pageSize={data.pageSize} total={data.total} onPage={setPage} />}
       </Card>
       <Modal open={open} title="Novo EPI" onClose={() => setOpen(false)} wide>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="Código interno"><Input value={f.internalCode} onChange={(e) => setF({ ...f, internalCode: e.target.value })} /></Field>
-          <Field label="Número do CA"><Input inputMode="numeric" value={f.caNumber} onChange={(e) => setF({ ...f, caNumber: e.target.value })} /></Field>
-          <Field label="Descrição" className="sm:col-span-2"><Input value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></Field>
-          <Field label="Categoria">
-            <Select value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })}>
-              {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
-            </Select>
-          </Field>
-          <Field label="Fabricante"><Input value={f.manufacturer} onChange={(e) => setF({ ...f, manufacturer: e.target.value })} /></Field>
-          <Field label="Periodicidade de troca (dias)"><Input type="number" min={0} value={f.replacementDays} onChange={(e) => setF({ ...f, replacementDays: e.target.value })} /></Field>
-          <Field label="Custo unitário (R$)"><Input inputMode="decimal" value={f.unitCost} onChange={(e) => setF({ ...f, unitCost: e.target.value })} /></Field>
-          <Field label="Tamanhos (separados por vírgula)" hint="Vazio = variação única" className="sm:col-span-2"><Input placeholder="P, M, G, GG" value={f.sizes} onChange={(e) => setF({ ...f, sizes: e.target.value })} /></Field>
-          <Field label="Orientação de uso" className="sm:col-span-2"><Textarea value={f.usage} onChange={(e) => setF({ ...f, usage: e.target.value })} /></Field>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.reusable} onChange={(e) => setF({ ...f, reusable: e.target.checked })} /> Reutilizável (higienização)</label>
-          <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.requiresReturn} onChange={(e) => setF({ ...f, requiresReturn: e.target.checked })} /> Exige devolução na troca</label>
-          <div className="sm:col-span-2"><ErrorBox error={create.error} /></div>
-          <div className="flex justify-end sm:col-span-2"><Button loading={create.isPending} disabled={!f.internalCode || f.description.length < 2} onClick={() => create.mutate()}>Cadastrar</Button></div>
-        </div>
+        <form
+          noValidate
+          className="space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            create.mutate();
+          }}
+        >
+          <div className="form-grid">
+            <Field label="Descrição" className="form-span-full"><Input value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></Field>
+            <Field label="Código interno"><Input value={f.internalCode} onChange={(e) => setF({ ...f, internalCode: e.target.value })} /></Field>
+            <Field label="Número do CA"><Input inputMode="numeric" value={f.caNumber} onChange={(e) => setF({ ...f, caNumber: e.target.value })} /></Field>
+            <Field label="Categoria">
+              <Select value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })}>
+                {CATEGORIES.map((c) => <option key={c}>{c}</option>)}
+              </Select>
+            </Field>
+            <Field label="Fabricante"><Input value={f.manufacturer} onChange={(e) => setF({ ...f, manufacturer: e.target.value })} /></Field>
+            <Field label="Periodicidade de troca (dias)"><Input type="number" min={0} value={f.replacementDays} onChange={(e) => setF({ ...f, replacementDays: e.target.value })} /></Field>
+            <Field label="Custo unitário (R$)"><Input inputMode="decimal" value={f.unitCost} onChange={(e) => setF({ ...f, unitCost: e.target.value })} /></Field>
+            <Field label="Tamanhos (separados por vírgula)" hint="Vazio = variação única" className="form-span-full"><Input placeholder="P, M, G, GG" value={f.sizes} onChange={(e) => setF({ ...f, sizes: e.target.value })} /></Field>
+            <Field label="Orientação de uso" className="form-span-full"><Textarea rows={2} value={f.usage} onChange={(e) => setF({ ...f, usage: e.target.value })} /></Field>
+            <div className="form-span-full flex flex-wrap gap-x-6 gap-y-2">
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.reusable} onChange={(e) => setF({ ...f, reusable: e.target.checked })} /> Reutilizável (higienização)</label>
+              <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.requiresReturn} onChange={(e) => setF({ ...f, requiresReturn: e.target.checked })} /> Exige devolução na troca</label>
+            </div>
+          </div>
+          <ErrorBox error={create.error} />
+          <FormActions>
+            <Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancelar</Button>
+            <Button type="submit" loading={create.isPending} disabled={!f.internalCode || f.description.length < 2}>{create.isPending ? "Salvando…" : "Cadastrar"}</Button>
+          </FormActions>
+        </form>
       </Modal>
     </>
   );

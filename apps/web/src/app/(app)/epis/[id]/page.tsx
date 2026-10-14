@@ -1,9 +1,9 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { use, useEffect, useState } from "react";
+import { type FormEvent, use, useEffect, useState } from "react";
 import { DocumentsPanel } from "@/components/documents-panel";
-import { Badge, Button, Card, ErrorBox, Field, Input, Loading, PageHeader, StatusBadge, Table, Tabs, Textarea, useToast } from "@/components/ui";
+import { Badge, Button, Card, ErrorBox, Field, FormActions, Input, Loading, PageHeader, StatusBadge, Table, Tabs, Textarea, useToast } from "@/components/ui";
 import { api } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { fmtDate, fmtMoney } from "@/lib/format";
@@ -68,6 +68,11 @@ export default function EpiPage({ params }: { params: Promise<{ id: string }> })
     },
   });
 
+  function submit(e: FormEvent) {
+    e.preventDefault();
+    save.mutate();
+  }
+
   if (isLoading) return <Loading />;
   if (error || !p) return <ErrorBox error={error} />;
   const editable = can("epi.catalogo.alterar");
@@ -85,15 +90,22 @@ export default function EpiPage({ params }: { params: Promise<{ id: string }> })
       {tab === "dados" && (
         <div className="grid gap-4 lg:grid-cols-2">
           <Card title="Dados">
-            <div className="grid gap-3">
-              <Field label="Descrição"><Input disabled={!editable} value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
-              <Field label="Fabricante"><Input disabled={!editable} value={form.manufacturer ?? ""} onChange={(e) => setForm({ ...form, manufacturer: e.target.value })} /></Field>
-              <Field label="CA atual" hint="Trocar o CA preserva o histórico (lotes antigos mantêm o CA da compra)."><Input disabled={!editable} value={form.caNumber ?? ""} onChange={(e) => setForm({ ...form, caNumber: e.target.value })} /></Field>
-              <Field label="Periodicidade de troca (dias)"><Input disabled={!editable} type="number" value={form.replacementDays ?? ""} onChange={(e) => setForm({ ...form, replacementDays: e.target.value })} /></Field>
-              <Field label="Custo unitário" hint={fmtMoney(form.unitCost)}><Input disabled={!editable} value={form.unitCost ?? ""} onChange={(e) => setForm({ ...form, unitCost: e.target.value })} /></Field>
+            <form noValidate className="space-y-3" onSubmit={submit}>
+              <div className="form-grid">
+                <Field label="Descrição" className="form-span-full"><Input disabled={!editable} value={form.description ?? ""} onChange={(e) => setForm({ ...form, description: e.target.value })} /></Field>
+                <Field label="Fabricante"><Input disabled={!editable} value={form.manufacturer ?? ""} onChange={(e) => setForm({ ...form, manufacturer: e.target.value })} /></Field>
+                <Field label="CA atual"><Input disabled={!editable} value={form.caNumber ?? ""} onChange={(e) => setForm({ ...form, caNumber: e.target.value })} /></Field>
+                <Field label="Periodicidade de troca (dias)"><Input disabled={!editable} type="number" value={form.replacementDays ?? ""} onChange={(e) => setForm({ ...form, replacementDays: e.target.value })} /></Field>
+                <Field label="Custo unitário" hint={fmtMoney(form.unitCost)}><Input disabled={!editable} value={form.unitCost ?? ""} onChange={(e) => setForm({ ...form, unitCost: e.target.value })} /></Field>
+                <p className="form-span-full text-xs text-zinc-600">Trocar o CA preserva o histórico (lotes antigos mantêm o CA da compra).</p>
+              </div>
               <ErrorBox error={save.error} />
-              {editable && <div className="flex justify-end"><Button loading={save.isPending} onClick={() => save.mutate()}>Salvar</Button></div>}
-            </div>
+              {editable && (
+                <FormActions>
+                  <Button type="submit" loading={save.isPending}>{save.isPending ? "Salvando…" : "Salvar"}</Button>
+                </FormActions>
+              )}
+            </form>
           </Card>
           <Card title="Certificado de Aprovação (base CAEPI)">
             {p.ca ? (
@@ -145,15 +157,21 @@ export default function EpiPage({ params }: { params: Promise<{ id: string }> })
 
       {tab === "orientacoes" && (
         <Card title="Orientações exibidas na entrega e no comprovante">
-          <div className="grid gap-3">
-            {GUIDANCE.map(([k, label]) => (
-              <Field key={k} label={label}>
-                {k === "videoUrl" ? <Input disabled={!editable} value={guidance[k] ?? ""} onChange={(e) => setGuidance({ ...guidance, [k]: e.target.value })} /> : <Textarea disabled={!editable} value={guidance[k] ?? ""} onChange={(e) => setGuidance({ ...guidance, [k]: e.target.value })} />}
-              </Field>
-            ))}
+          <form noValidate className="space-y-3" onSubmit={submit}>
+            <div className="grid gap-x-4 gap-y-3 md:grid-cols-2">
+              {GUIDANCE.map(([k, label]) => (
+                <Field key={k} label={label} className={k === "videoUrl" ? "md:col-span-2" : undefined}>
+                  {k === "videoUrl" ? <Input disabled={!editable} value={guidance[k] ?? ""} onChange={(e) => setGuidance({ ...guidance, [k]: e.target.value })} /> : <Textarea rows={2} disabled={!editable} value={guidance[k] ?? ""} onChange={(e) => setGuidance({ ...guidance, [k]: e.target.value })} />}
+                </Field>
+              ))}
+            </div>
             <ErrorBox error={save.error} />
-            {editable && <div className="flex justify-end"><Button loading={save.isPending} onClick={() => save.mutate()}>Salvar orientações</Button></div>}
-          </div>
+            {editable && (
+              <FormActions>
+                <Button type="submit" loading={save.isPending}>{save.isPending ? "Salvando…" : "Salvar orientações"}</Button>
+              </FormActions>
+            )}
+          </form>
         </Card>
       )}
 
