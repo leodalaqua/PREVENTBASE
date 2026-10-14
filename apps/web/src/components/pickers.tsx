@@ -75,7 +75,7 @@ export function EmployeePicker({ onPick }: { onPick: (e: EmployeeLite) => void }
       <ul className="divide-y divide-zinc-100 overflow-hidden rounded-lg border border-zinc-200 bg-white empty:hidden">
         {data?.items.map((e) => (
           <li key={e.id}>
-            <button className="flex min-h-14 w-full items-center justify-between gap-2 px-3 py-3 text-left transition-colors duration-100 hover:bg-zinc-50 active:bg-brand-50" onClick={() => onPick(e)}>
+            <button data-no-press className="flex min-h-14 w-full items-center justify-between gap-2 px-3 py-3 text-left transition-colors duration-100 hover:bg-zinc-50 active:bg-brand-50" onClick={() => onPick(e)}>
               <span className="min-w-0">
                 <span className="break-any block font-medium text-zinc-900">{e.name}</span>
                 <span className="break-any text-xs text-zinc-600">
@@ -212,6 +212,7 @@ export function EpiPicker({ onPick }: { onPick: (p: PickedVariant) => void }) {
         {data?.items.map((p) => (
           <li key={p.id}>
             <button
+              data-no-press
               className="min-h-12 w-full px-3 py-2.5 text-left text-sm transition-colors duration-100 hover:bg-zinc-50 active:bg-brand-50"
               onClick={() => {
                 const active = p.variants.filter((v) => v.active);

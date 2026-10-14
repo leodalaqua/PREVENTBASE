@@ -117,7 +117,7 @@ function Shell({ children }: { children: ReactNode }) {
     <div className="has-bottom-nav min-h-dvh lg:flex">
       <aside
         className={cx(
-          "on-dark fixed inset-y-0 left-0 z-40 flex w-[min(18rem,85vw)] flex-col bg-zinc-900 pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pt-[env(safe-area-inset-top)] text-zinc-200 shadow-xl transition-[transform,visibility] duration-300 ease-drawer motion-reduce:transition-none lg:visible lg:sticky lg:top-0 lg:h-dvh lg:w-64 lg:translate-x-0 lg:shadow-none",
+          "on-dark fixed inset-y-0 left-0 z-40 flex w-[min(18rem,85vw)] flex-col bg-zinc-900 pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)] pt-[env(safe-area-inset-top)] text-zinc-200 shadow-xl transition-[translate,visibility] duration-(--motion-drawer) ease-drawer motion-reduce:transition-none lg:visible lg:sticky lg:top-0 lg:h-dvh lg:w-64 lg:translate-x-0 lg:shadow-none",
           open ? "visible translate-x-0" : "invisible -translate-x-full",
         )}
         aria-label="Menu principal"
@@ -171,7 +171,7 @@ function Shell({ children }: { children: ReactNode }) {
         </div>
       </aside>
       <div
-        className={cx("fixed inset-0 z-30 bg-zinc-900/40 transition-opacity duration-200 motion-reduce:transition-none lg:hidden", open ? "opacity-100" : "pointer-events-none opacity-0")}
+        className={cx("fixed inset-0 z-30 bg-zinc-900/40 transition-opacity duration-(--motion-drawer) lg:hidden", open ? "opacity-100" : "pointer-events-none opacity-0")}
         onClick={() => setOpen(false)}
         aria-hidden
       />

@@ -29,7 +29,7 @@ const VARIANTS: Record<Variant, string> = {
   ghost: "text-zinc-700 hover:bg-zinc-100 active:bg-zinc-200 disabled:opacity-50",
 };
 const btnBase =
-  "inline-flex min-h-10 select-none items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-[background-color,border-color,color,box-shadow,transform] duration-150 ease-out active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100 motion-reduce:transition-colors motion-reduce:active:scale-100";
+  "inline-flex min-h-10 select-none items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-[background-color,border-color,color,box-shadow,scale] duration-150 disabled:cursor-not-allowed motion-reduce:transition-colors";
 
 export function Button({ variant = "primary", loading, className, children, ...props }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; loading?: boolean }) {
   return (
@@ -358,7 +358,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-[60] flex flex-col items-center gap-2 px-4 lg:bottom-4" role="status" aria-live="polite">
         {toasts.map((t) => (
-          <div key={t.id} className={cx("sheet-enter pointer-events-auto flex max-w-md items-start gap-2 rounded-lg px-4 py-2.5 text-sm text-white shadow-lg", t.tone === "ok" ? "bg-zinc-900" : "bg-red-700")}>
+          <div key={t.id} className={cx("toast-enter pointer-events-auto flex max-w-md items-start gap-2 rounded-lg px-4 py-2.5 text-sm text-white shadow-lg", t.tone === "ok" ? "bg-zinc-900" : "bg-red-700")}>
             {t.tone === "ok" ? <IconCheck size={18} className="mt-px text-brand-400" /> : <IconError size={18} className="mt-px text-white" />}
             <span className="break-any min-w-0">{t.text}</span>
           </div>

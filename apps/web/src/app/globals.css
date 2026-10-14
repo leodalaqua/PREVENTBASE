@@ -13,8 +13,146 @@
   --color-brand-900: #75430b;
   --color-brand-950: #442302;
 
-  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+
+  --default-transition-timing-function: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Camada de motion do ecossistema — canônico: C:\ROBBY\kits\motion\motion.css
+   Regras: C:\ROBBY\docs\decisions\2026-10-03-frontends-responsivos.md §5.
+   Seletores em :where() dentro de @layer base: só preenchem o que o CSS do app não define.
+   Componentes com motion própria (Radix/shadcn usam [data-state]) ficam de fora.
+   Opt-out de press num botão: data-no-press. */
+
+@layer base {
+  :root {
+    --motion-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --motion-ease-in: cubic-bezier(0.3, 0, 1, 1);
+    --motion-ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --motion-ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+    --motion-press: 120ms;
+    --motion-fast: 150ms;
+    --motion-base: 200ms;
+    --motion-enter: 220ms;
+    --motion-exit: 150ms;
+    --motion-drawer: 280ms;
+  }
+
+  :where(a, button, summary, input, select, textarea, label, [role="button"], [role="tab"], [role="menuitem"], [role="option"]) {
+    transition-property: color, background-color, border-color, outline-color, outline-offset, text-decoration-color, fill, stroke, box-shadow, opacity, scale;
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--motion-ease-out);
+  }
+
+  :where(button, [role="button"], input[type="button"], input[type="submit"], input[type="reset"]):where(:not(:disabled, [aria-disabled="true"], [data-no-press], [data-state])):active {
+    scale: 0.97;
+    transition-duration: var(--motion-press);
+  }
+
+  :where([role="dialog"], [role="alertdialog"], [aria-modal="true"]):where(:not(dialog, [data-state])) {
+    transition-property: opacity, translate;
+    transition-duration: var(--motion-enter);
+    transition-timing-function: var(--motion-ease-out);
+  }
+
+  :where([role="menu"], [role="listbox"], [role="tooltip"]):where(:not([data-state])) {
+    transform-origin: var(--motion-origin, top center);
+    transition-property: opacity, scale;
+    transition-duration: var(--motion-fast);
+    transition-timing-function: var(--motion-ease-out);
+  }
+
+  :where([role="alert"], [role="status"]):where(:not([data-state])) {
+    transition-property: opacity, translate;
+    transition-duration: var(--motion-base);
+    transition-timing-function: var(--motion-ease-out);
+  }
+
+  @starting-style {
+    :where([role="dialog"], [role="alertdialog"], [aria-modal="true"]):where(:not(dialog, [data-state])) {
+      opacity: 0;
+      translate: 0 6px;
+    }
+    :where([role="menu"], [role="listbox"], [role="tooltip"]):where(:not([data-state])) {
+      opacity: 0;
+      scale: 0.97;
+    }
+    :where([role="alert"], [role="status"]):where(:not([data-state])) {
+      opacity: 0;
+      translate: 0 4px;
+    }
+  }
+
+  :where(dialog:not([data-state])) {
+    opacity: 0;
+    scale: 0.97;
+    transition: opacity var(--motion-exit) var(--motion-ease-in), scale var(--motion-exit) var(--motion-ease-in);
+    transition: opacity var(--motion-exit) var(--motion-ease-in), scale var(--motion-exit) var(--motion-ease-in),
+      overlay var(--motion-exit) var(--motion-ease-in) allow-discrete, display var(--motion-exit) var(--motion-ease-in) allow-discrete;
+  }
+  :where(dialog[open]:not([data-state])) {
+    opacity: 1;
+    scale: 1;
+    transition-duration: var(--motion-enter);
+    transition-timing-function: var(--motion-ease-out);
+  }
+  :where(dialog:not([data-state]))::backdrop {
+    opacity: 0;
+    transition: opacity var(--motion-exit) var(--motion-ease-in);
+    transition: opacity var(--motion-exit) var(--motion-ease-in),
+      overlay var(--motion-exit) var(--motion-ease-in) allow-discrete, display var(--motion-exit) var(--motion-ease-in) allow-discrete;
+  }
+  :where(dialog[open]:not([data-state]))::backdrop {
+    opacity: 1;
+    transition-duration: var(--motion-enter);
+  }
+  @starting-style {
+    :where(dialog[open]:not([data-state])) {
+      opacity: 0;
+      scale: 0.97;
+    }
+    :where(dialog[open]:not([data-state]))::backdrop {
+      opacity: 0;
+    }
+  }
+
+  :where(details[open]) > :where(:not(summary)) {
+    animation: motion-reveal var(--motion-base) var(--motion-ease-out) backwards;
+  }
+
+  @keyframes motion-reveal {
+    from { opacity: 0; translate: 0 -4px; }
+  }
+  @keyframes motion-fade {
+    from { opacity: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    :where(button, [role="button"], input[type="button"], input[type="submit"], input[type="reset"]):active {
+      scale: none;
+    }
+    @starting-style {
+      :where([role="dialog"], [role="alertdialog"], [aria-modal="true"], [role="menu"], [role="listbox"], [role="tooltip"], [role="alert"], [role="status"], dialog[open]) {
+        translate: none;
+        scale: none;
+      }
+    }
+    :where(dialog) {
+      scale: none;
+    }
+    :where(details[open]) > :where(:not(summary)) {
+      animation-name: motion-fade;
+    }
+  }
+}
+
+@view-transition {
+  navigation: auto;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: var(--motion-base, 200ms);
+  animation-timing-function: var(--motion-ease-out, ease-out);
 }
 
 :root {
@@ -242,27 +380,56 @@ dd,
   }
 }
 
-@keyframes pb-sheet-in {
-  from {
-    opacity: 0;
-    transform: translateY(16px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
 .page-enter {
-  animation: pb-fade-in 0.18s var(--ease-out-quint);
+  animation: pb-fade-in var(--motion-base) var(--motion-ease-out);
 }
 
+/* Modal: bottom sheet no mobile, painel central a partir de sm. */
 .sheet-enter {
-  animation: pb-sheet-in 0.24s var(--ease-out-quint);
+  transition:
+    opacity var(--motion-drawer) var(--motion-ease-drawer),
+    translate var(--motion-drawer) var(--motion-ease-drawer);
+}
+
+@starting-style {
+  .sheet-enter {
+    opacity: 0;
+    translate: 0 16px;
+  }
+}
+
+@media (min-width: 640px) {
+  .sheet-enter {
+    transition-duration: var(--motion-enter);
+    transition-timing-function: var(--motion-ease-out);
+  }
+
+  @starting-style {
+    .sheet-enter {
+      translate: 0 6px;
+    }
+  }
+}
+
+.toast-enter {
+  transition:
+    opacity var(--motion-base) var(--motion-ease-out),
+    translate var(--motion-base) var(--motion-ease-out);
+}
+
+@starting-style {
+  .toast-enter {
+    opacity: 0;
+    translate: 0 4px;
+  }
 }
 
 .backdrop-enter {
-  animation: pb-fade 0.18s ease-out;
+  animation: pb-fade var(--motion-enter) var(--motion-ease-out);
+}
+
+[role="tablist"] + * {
+  animation: pb-fade var(--motion-fast) var(--motion-ease-out);
 }
 
 @keyframes pb-shimmer {
@@ -282,9 +449,14 @@ dd,
   html {
     scroll-behavior: auto;
   }
-  .page-enter,
-  .sheet-enter {
-    animation: pb-fade 0.12s ease-out;
+  .page-enter {
+    animation: pb-fade var(--motion-fast) var(--motion-ease-out);
+  }
+  @starting-style {
+    .sheet-enter,
+    .toast-enter {
+      translate: none;
+    }
   }
   .skeleton {
     animation: none;
